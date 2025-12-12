@@ -44,7 +44,11 @@ function openTab(tabName) {
 let qrCodeObj = null;
 
 async function generateQR() {
-    if (!db) return alert("Firebase no configurado");
+    console.log("Intentando generar QR...");
+    if (!db) {
+        console.error("Base de datos no inicializada");
+        return alert("Firebase no configurado o sin conexión");
+    }
 
     const nameInput = document.getElementById('studentName');
     const dniInput = document.getElementById('studentDNI');
@@ -57,6 +61,8 @@ async function generateQR() {
     const grade = gradeInput.value;
     const section = sectionInput.value;
     const phone = phoneInput.value.trim();
+
+    console.log("Datos capturados:", { name, dni, grade, section, phone });
 
     // Validation
     if (!name || !dni) {
@@ -76,11 +82,42 @@ async function generateQR() {
 
     // Check for duplicate DNI in Firestore
     try {
+        console.log("Verificando duplicados en Firebase...");
         const docRef = await db.collection('students').where('id', '==', dni).get();
         if (!docRef.empty) {
             const existing = docRef.docs[0].data();
-            alert("Este DNI ya ha sido registrado para: " + existing.n);
-            return;
+            const proceed = confirm(`El alumno ${existing.n} ya existe.\n¿Quieres ver su código QR existente?`);
+
+            if (proceed) {
+                // Generate QR with existing data
+                const qrString = JSON.stringify({
+                    n: existing.n,
+                    id: existing.id,
+                    g: existing.g,
+                    s: existing.s,
+                    p: existing.p
+                });
+
+                const container = document.getElementById('qrcode');
+                container.innerHTML = "";
+
+                qrCodeObj = new QRCode(container, {
+                    text: qrString,
+                    width: 180,
+                    height: 180,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                document.getElementById('downloadBtn').style.display = 'block';
+                const qrText = document.getElementById('qr-text');
+                qrText.innerText = `${existing.n} - ${existing.g}° "${existing.s}"`;
+                qrText.style.display = 'block';
+
+                showToast("QR Recuperado", "success");
+            }
+            return; // Stop processing the "New" registration
         }
 
         // Create a data object
@@ -93,8 +130,10 @@ async function generateQR() {
             created: firebase.firestore.FieldValue.serverTimestamp() // Cloud timestamp
         };
 
+        console.log("Guardando en Firebase...", studentData);
         // Save to Firestore
         await db.collection('students').add(studentData);
+        console.log("Guardado exitoso");
 
         // Convert to string for QR (exclude server timestamp for clean JSON)
         const qrData = { ...studentData };
@@ -128,8 +167,8 @@ async function generateQR() {
         nameInput.focus();
 
     } catch (error) {
-        console.error("Error generando:", error);
-        alert("Error al conectar con la base de datos.");
+        console.error("Error FATAL generando:", error);
+        alert("Error al conectar con la base de datos: " + error.message);
     }
 }
 
