@@ -197,8 +197,8 @@ async function generateQR() {
 
                 qrCodeObj = new QRCode(container, {
                     text: qrString,
-                    width: 180,
-                    height: 180,
+                    width: 60,
+                    height: 260,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
                     correctLevel: QRCode.CorrectLevel.H
@@ -239,8 +239,8 @@ async function generateQR() {
 
         qrCodeObj = new QRCode(container, {
             text: qrString,
-            width: 180,
-            height: 180,
+            width: 260,
+            height: 260,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
