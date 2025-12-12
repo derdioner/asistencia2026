@@ -1,3 +1,23 @@
+// --- FIREBASE CONFIGURATION ---
+const firebaseConfig = {
+    apiKey: "AIzaSyAjVxNXeyg4D62SslkPG3atvi_0_12Wf2E",
+    authDomain: "gh20261.firebaseapp.com",
+    projectId: "gh20261",
+    storageBucket: "gh20261.firebasestorage.app",
+    messagingSenderId: "582998426268",
+    appId: "1:582998426268:web:a33229f254386272956359"
+};
+// Initialize Firebase
+let db;
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase conectado");
+} catch (error) {
+    console.warn("Error inicializando Firebase (¿Faltan las llaves?):", error);
+    alert("⚠️ Configura las llaves de Firebase en script.js para que funcione la nube.");
+}
+
 // TABS LOGIC
 function openTab(tabName) {
     const tabs = document.querySelectorAll('.tab-content');
@@ -22,11 +42,10 @@ function openTab(tabName) {
 
 // --- GENERATOR LOGIC ---
 let qrCodeObj = null;
-let generatedCount = parseInt(localStorage.getItem('generatedCount')) || 0;
-// Load generated students database
-let generatedStudents = JSON.parse(localStorage.getItem('generatedStudents')) || [];
 
-function generateQR() {
+async function generateQR() {
+    if (!db) return alert("Firebase no configurado");
+
     const nameInput = document.getElementById('studentName');
     const dniInput = document.getElementById('studentDNI');
     const gradeInput = document.getElementById('studentGrade');
@@ -55,89 +74,89 @@ function generateQR() {
         return;
     }
 
-    // Check for duplicate DNI
-    const duplicate = generatedStudents.find(student => student.id === dni);
-    if (duplicate) {
-        alert("Este DNI ya ha sido registrado para: " + duplicate.n);
-        return;
+    // Check for duplicate DNI in Firestore
+    try {
+        const docRef = await db.collection('students').where('id', '==', dni).get();
+        if (!docRef.empty) {
+            const existing = docRef.docs[0].data();
+            alert("Este DNI ya ha sido registrado para: " + existing.n);
+            return;
+        }
+
+        // Create a data object
+        const studentData = {
+            n: name,
+            id: dni,
+            g: grade,
+            s: section,
+            p: phone,
+            created: firebase.firestore.FieldValue.serverTimestamp() // Cloud timestamp
+        };
+
+        // Save to Firestore
+        await db.collection('students').add(studentData);
+
+        // Convert to string for QR (exclude server timestamp for clean JSON)
+        const qrData = { ...studentData };
+        delete qrData.created; // Don't put server obj in QR
+        const qrString = JSON.stringify(qrData);
+
+        const container = document.getElementById('qrcode');
+        container.innerHTML = ""; // Clear previous
+
+        qrCodeObj = new QRCode(container, {
+            text: qrString,
+            width: 180,
+            height: 180,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        document.getElementById('downloadBtn').style.display = 'block';
+        const qrText = document.getElementById('qr-text');
+        qrText.innerText = `${name} - ${grade}° "${section}"`;
+        qrText.style.display = 'block';
+
+        // Success Feedback & Auto-Clear
+        showToast("¡Pase Guardado en la Nube!", "success");
+
+        // Clear inputs
+        nameInput.value = '';
+        dniInput.value = '';
+        phoneInput.value = '';
+        nameInput.focus();
+
+    } catch (error) {
+        console.error("Error generando:", error);
+        alert("Error al conectar con la base de datos.");
     }
-
-    // Create a data object
-    const studentData = {
-        n: name,
-        id: dni,
-        g: grade,
-        s: section,
-        p: phone
-    };
-
-    // Convert to string for QR
-    const qrString = JSON.stringify(studentData);
-
-    const container = document.getElementById('qrcode');
-    container.innerHTML = ""; // Clear previous
-
-    qrCodeObj = new QRCode(container, {
-        text: qrString,
-        width: 180,
-        height: 180,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-    });
-
-    document.getElementById('downloadBtn').style.display = 'block';
-    const qrText = document.getElementById('qr-text');
-    qrText.innerText = `${name} - ${grade}° "${section}"`;
-    qrText.style.display = 'block';
-
-    // Update Count in background (optional)
-    generatedCount++;
-    localStorage.setItem('generatedCount', generatedCount);
-
-    // Save to Students Database
-    // Add timestamp for record keeping
-    studentData.created = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
-    generatedStudents.push(studentData);
-    localStorage.setItem('generatedStudents', JSON.stringify(generatedStudents));
-
-    // Success Feedback & Auto-Clear
-    alert("¡Pase Generado con Éxito!");
-
-    // Clear inputs but keep QR visible
-    nameInput.value = '';
-    dniInput.value = '';
-    phoneInput.value = '';
-    // Optional: Reset selects or keep them? Keeping grade/section is usually helpful for batching.
-    // Let's keep grade/section as they likely generate a whole class at once.
-    nameInput.focus();
 }
 
-function exportGeneratedDatabase() {
-    if (generatedStudents.length === 0) {
-        alert("No hay estudiantes en la base de datos.");
-        return;
+async function exportGeneratedDatabase() {
+    if (!db) return;
+    try {
+        const snapshot = await db.collection('students').get();
+        if (snapshot.empty) {
+            alert("No hay estudiantes en la base de datos.");
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
+
+        snapshot.forEach(doc => {
+            const st = doc.data();
+            const safeName = `"${st.n}"`;
+            csvContent += `${safeName};${st.id};${st.g};${st.s};${st.p || ''}\n`;
+        });
+
+        downloadCSV(csvContent, "BaseDatos_Alumnos_Cloud.csv");
+
+    } catch (e) {
+        console.error(e);
+        alert("Error descargando base de datos");
     }
-
-    // CSV Header (Using ; for Spanish Excel compatibility)
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Nombre;DNI;Grado;Seccion;Telefono Apoderado;Fecha Creacion\n";
-
-    // CSV Rows
-    generatedStudents.forEach(st => {
-        // Escape content
-        const safeName = `"${st.n}"`;
-        csvContent += `${safeName};${st.id};${st.g};${st.s};${st.p || ''};${st.created}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const dateStr = new Date().toISOString().slice(0, 10);
-    link.setAttribute("download", `BaseDatos_Alumnos_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
 }
 
 function downloadQR() {
@@ -145,7 +164,7 @@ function downloadQR() {
     if (qrImg) {
         const link = document.createElement('a');
         link.href = qrImg.src;
-        link.download = `QR_Asistencia_${document.getElementById('studentName').value}.png`;
+        link.download = `QR_Asistencia.png`;
         link.click();
     }
 }
@@ -153,22 +172,36 @@ function downloadQR() {
 // --- SCANNER LOGIC ---
 let html5QrcodeScanner = null;
 let isScanning = false;
+let currentAttendanceList = []; // Local cache for table rendering
+let unsubscribeListener = null;
 
 function startScanner() {
     if (isScanning) return;
 
-    // We use the Html5Qrcode class for more control or Html5QrcodeScanner for UI
-    // Using Html5QrcodeScanner for simplicity as requested
+    // Start Realtime Listener
+    if (db && !unsubscribeListener) {
+        // Listen to today's attendance? Or last 50?
+        // Let's just listen to the last 50 records for performance, or filter by today client-side if dataset is small.
+        // Better: Filter by date string if possible?
+        // For simplicity: Order by timestamp desc limit 100.
+        unsubscribeListener = db.collection('attendance')
+            .orderBy('timestamp', 'desc')
+            .limit(100)
+            .onSnapshot((snapshot) => {
+                currentAttendanceList = [];
+                snapshot.forEach(doc => {
+                    currentAttendanceList.push(doc.data());
+                });
+                renderHistory(); // Auto-update table
+            });
+    }
 
-    // Small delay to ensure DOM is ready
     setTimeout(() => {
         if (!html5QrcodeScanner) {
             html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader",
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                /* verbose= */ false
+                "reader", { fps: 10, qrbox: { width: 250, height: 250 } },
+                false
             );
-
             html5QrcodeScanner.render(onScanSuccess, onScanFailure);
             isScanning = true;
         }
@@ -176,60 +209,60 @@ function startScanner() {
 }
 
 function stopScanner() {
-    // We typically don't stop the 'Scanner' widget automatically because it handles itself,
-    // but if we wanted to pause it we could. For now, we leave it active or let the library handle tab focus.
-    // Actually, re-rendering usually requires clearing. Let's rely on the library's state.
+    // Optional: Stop listener if leaving tab to save bandwidth?
+    // For now we keep it to show updates even in other tab.
 }
 
-// Attendance History Array
-let attendanceHistory = JSON.parse(localStorage.getItem('attendanceHistory')) || [];
-
-function onScanSuccess(decodedText, decodedResult) {
-    // Prevent duplicate fast scans (debounce)
-    const now = new Date();
-    const lastScan = attendanceHistory.length > 0 ? new Date(attendanceHistory[0].timestamp) : null;
-
-    if (lastScan && (now - lastScan) < 3000) {
-        // Less than 3 seconds since last scan, ignore to prevent double/triple scanning same person
-        return;
-    }
+async function onScanSuccess(decodedText, decodedResult) {
+    if (!db) return;
 
     try {
         const data = JSON.parse(decodedText);
-
         // Basic validation
         if (!data.n || !data.id) throw new Error("QR Inválido");
 
-        // Unique Daily Scan Validation
+        const now = new Date();
         const todayDate = now.toLocaleDateString();
-        const alreadyScanned = attendanceHistory.find(r => r.dni === data.id && r.displayDate === todayDate);
 
-        if (alreadyScanned) {
+        // Check if recently scanned in LOCAL cache to avoid hitting DB for double scan
+        // This is a "debounce"
+        const lastScan = currentAttendanceList.find(r => r.dni === data.id);
+        if (lastScan && lastScan.displayDate === todayDate) {
+            // Check time difference
+            const lastTime = new Date(lastScan.timestamp.seconds * 1000); // Firestore timestamp
+            if ((now - lastTime) < 60000) { // 1 minute duplicate protection
+                // Silently ignore or show warning
+                return;
+            }
+        }
+
+        // Check DB for daily duplicate (Standard of Truth)
+        const duplicateCheck = await db.collection('attendance')
+            .where('dni', '==', data.id)
+            .where('displayDate', '==', todayDate)
+            .get();
+
+        if (!duplicateCheck.empty) {
             showToast(`⚠️ ${data.n} ya registró asistencia hoy`, 'error');
             return;
         }
 
-        const record = {
+        // Add to Firestore
+        await db.collection('attendance').add({
             name: data.n,
             dni: data.id,
             grade: data.g,
             section: data.s,
             phone: data.p,
-            timestamp: now.toISOString(),
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Server time
             displayTime: now.toLocaleTimeString(),
             displayDate: todayDate
-        };
+        });
 
-        attendanceHistory.unshift(record);
-        saveHistory();
-        renderHistory();
-
-        // Non-blocking success message
         showToast(`✅ Asistencia: ${data.n}`, 'success');
 
     } catch (e) {
-        console.error("Error parsing QR", e);
-        // alert("QR no válido o formato incorrecto");
+        console.error("Error parsing/saving QR", e);
     }
 }
 
@@ -237,26 +270,25 @@ function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.innerText = message;
     toast.className = `toast show ${type}`;
-
-    setTimeout(() => {
-        toast.className = 'toast'; // Hide
-    }, 3000); // 3 seconds
+    setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
 
 function onScanFailure(error) {
-    // console.warn(`Code scan error = ${error}`);
-}
-
-// --- DATA MANAGEMENT ---
-function saveHistory() {
-    localStorage.setItem('attendanceHistory', JSON.stringify(attendanceHistory));
+    // console.warn(error);
 }
 
 function renderHistory() {
     const list = document.getElementById('attendanceList');
     list.innerHTML = "";
 
-    attendanceHistory.forEach(record => {
+    // Check if empty
+    if (currentAttendanceList.length === 0) {
+        list.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No hay registros recientes</td></tr>";
+        document.getElementById('attendanceCount').innerText = `Total: 0`;
+        return;
+    }
+
+    currentAttendanceList.forEach(record => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${record.displayTime}</td>
@@ -269,20 +301,26 @@ function renderHistory() {
         list.appendChild(row);
     });
 
-    // Update attendance count
-    document.getElementById('attendanceCount').innerText = `Total Hoy: ${attendanceHistory.length}`;
+    // Update count (Showing count of visible records, mostly today)
+    // To get REAL daily total we would need a separate query count.
+    // For now:
+    document.getElementById('attendanceCount').innerText = `Últimos ${currentAttendanceList.length}`;
 }
 
-function clearHistory() {
-    if (attendanceHistory.length === 0) return;
-
-    const password = prompt("Ingrese la contraseña de administrador para borrar el historial:");
-    if (password === "1234") { // Simple password
-        if (confirm("¿Seguro que quieres borrar todo el historial?")) {
-            attendanceHistory = [];
-            saveHistory();
-            renderHistory();
-            alert("Historial eliminado.");
+async function clearHistory() {
+    if (!db) return;
+    const password = prompt("Ingrese contraseña ADMIN para borrar TOOOODO el historial de la NUBE:");
+    if (password === "1234") {
+        if (confirm("⚠️ ¿ESTÁS SEGURO? Se borrarán todos los registros de asistencia de la base de datos.")) {
+            // Delete logic is heavy in client. Usually done via Admin SDK.
+            // Client side batch delete (limit 500)
+            const snapshot = await db.collection('attendance').get();
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            alert("Historial de nube eliminado.");
         }
     } else if (password !== null) {
         alert("Contraseña incorrecta.");
@@ -290,38 +328,28 @@ function clearHistory() {
 }
 
 function exportToExcel() {
-    if (attendanceHistory.length === 0) {
-        alert("No hay datos para exportar.");
+    if (currentAttendanceList.length === 0) {
+        alert("No hay datos cargados para exportar.");
         return;
     }
 
-    // CSV Header (Using ; for Spanish Excel compatibility)
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Fecha;Hora;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
 
-    // CSV Rows
-    attendanceHistory.forEach(row => {
-        // Escape content
+    currentAttendanceList.forEach(row => {
         const safeName = `"${row.name}"`;
-        const date = row.displayDate;
-        const time = row.displayTime;
-
-        csvContent += `${date};${time};${safeName};${row.dni};${row.grade};${row.section};${row.phone}\n`;
+        csvContent += `${row.displayDate};${row.displayTime};${safeName};${row.dni};${row.grade};${row.section};${row.phone}\n`;
     });
 
+    downloadCSV(csvContent, `asistencia_cloud_${new Date().toISOString().slice(0, 10)}.csv`);
+}
 
-    const encodedUri = encodeURI(csvContent);
+function downloadCSV(content, fileName) {
+    const encodedUri = encodeURI(content);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    // Filename with date
-    const dateStr = new Date().toISOString().slice(0, 10);
-    link.setAttribute("download", `asistencia_${dateStr}.csv`);
+    link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
-
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-    renderHistory();
-});
