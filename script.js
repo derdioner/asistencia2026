@@ -504,3 +504,20 @@ function downloadCSV(content, fileName) {
     link.click();
     document.body.removeChild(link);
 }
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+    // renderHistory(); 
+
+    // AUTO-RUN DIAGNOSTIC AFTER 2 SECONDS
+    setTimeout(() => {
+        logToScreen("Autoejecutando diagnóstico...");
+        diagnoseConnection();
+    }, 2000);
+});
+
+// Global Error Handler
+window.onerror = function (msg, url, line) {
+    logToScreen(`ERROR GLOBAL: ${msg} (Línea ${line})`);
+    alert(`Error de Script: ${msg}`);
+};
