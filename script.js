@@ -44,15 +44,31 @@ function openTab(tabName) {
 let qrCodeObj = null;
 let unsubscribeStudents = null;
 
+// Helper logging
+function logToScreen(msg) {
+    const log = document.getElementById('debug-log');
+    if (log) {
+        const line = document.createElement('div');
+        line.innerText = `> ${new Date().toLocaleTimeString()} ${msg}`;
+        line.style.borderBottom = "1px solid #444";
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight; // Auto scroll
+    }
+    console.log(msg);
+}
+
 // Subscribe to Students List for Live View
 function subscribeToStudents() {
     if (!db || unsubscribeStudents) return;
 
+    logToScreen("Suscribiendo a lista (sin orden)...");
+
     unsubscribeStudents = db.collection('students')
-        .orderBy('created', 'desc') // Requires Index? If simple query, maybe auto. If fails, use no order or client sort.
-        // Actually, 'created' is a string ISO now. String sort works.
-        .limit(5)
+        // .orderBy('created', 'desc') // COMENTADO TEMPORALMENTE (Evitar error índices)
+        .limit(10)
         .onSnapshot((snapshot) => {
+            logToScreen(`Recibidos ${snapshot.size} alumnos de la nube.`);
+
             const list = document.getElementById('generatedList');
             if (!list) return;
             list.innerHTML = "";
@@ -69,6 +85,7 @@ function subscribeToStudents() {
                 list.appendChild(row);
             });
         }, (error) => {
+            logToScreen("ERROR LECTURA: " + error.message);
             console.error("Error obteniendo lista alumnos:", error);
             const list = document.getElementById('generatedList');
             if (list) list.innerHTML = `<tr><td colspan='3' style='color:red'>Error: ${error.message}</td></tr>`;
@@ -81,9 +98,9 @@ setTimeout(subscribeToStudents, 1500);
 
 
 async function generateQR() {
-    console.log("Intentando generar QR...");
+    logToScreen("Botón Generar Presionado");
     if (!db) {
-        console.error("Base de datos no inicializada");
+        logToScreen("ERROR: DB no existe");
         return alert("Firebase no configurado o sin conexión");
     }
 
@@ -98,8 +115,6 @@ async function generateQR() {
     const grade = gradeInput.value;
     const section = sectionInput.value;
     const phone = phoneInput.value.trim();
-
-    console.log("Datos capturados:", { name, dni, grade, section, phone });
 
     // Validation
     if (!name || !dni) {
@@ -119,9 +134,10 @@ async function generateQR() {
 
     // Check for duplicate DNI in Firestore
     try {
-        console.log("Verificando duplicados en Firebase...");
+        logToScreen(`Verificando DNI ${dni}...`);
         const docRef = await db.collection('students').where('id', '==', dni).get();
         if (!docRef.empty) {
+            logToScreen("DNI detectado como duplicado.");
             const existing = docRef.docs[0].data();
             const proceed = confirm(`El alumno ${existing.n} ya existe.\n¿Quieres ver su código QR existente?`);
 
@@ -193,11 +209,11 @@ async function generateQR() {
         qrText.style.display = 'block';
 
         // --- BACKGROUND SAVE ---
-        console.log("Guardando en Firebase...", studentData);
+        logToScreen("Intentando guardar en nube...");
 
         try {
             await db.collection('students').add(studentData);
-            console.log("Guardado exitoso");
+            logToScreen("GUARDADO EXITOSO (Confirmado por SDK)");
             showToast("¡Pase Guardado en la Nube!", "success");
 
             // Clear inputs ONLY if save was successful
@@ -206,11 +222,13 @@ async function generateQR() {
             phoneInput.value = '';
             nameInput.focus();
         } catch (saveError) {
+            logToScreen("ERROR ESCRITURA: " + saveError.message);
             console.error("Error guardando en nube:", saveError);
             alert("⚠️ El QR se generó, pero NO se pudo guardar en la base de datos de la nube.\n\nVerifica tu conexión a internet.");
         }
 
     } catch (error) {
+        logToScreen("ERROR FATAL: " + error.message);
         console.error("Error FATAL generando:", error);
         alert("⚠️ Error inesperado: " + error.message);
     }
