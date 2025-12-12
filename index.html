@@ -37,6 +37,23 @@
 
         <!-- GENERATOR SECTION -->
         <div id="generator" class="tab-content active">
+            <!-- SEARCH CARD -->
+            <div class="card" style="background: #E8F5E9; border: 1px solid #C8E6C9;">
+                <h3>🔍 Buscar Alumno (Reimprimir)</h3>
+                <div class="row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex: 2;">
+                        <input type="text" id="searchDNI" placeholder="Ingrese DNI (8 dígitos)" maxlength="8"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <button onclick="searchStudent()" class="btn-primary"
+                            style="padding: 12px; background: #2E7D32;">
+                            BUSCAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <h2>Generar Pase de Alumno</h2>
                 <div class="form-group">

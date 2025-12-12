@@ -427,6 +427,10 @@ function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.innerText = message;
     toast.className = `toast show ${type}`;
+    // Info style handling in CSS would be better, but inline works for quick patch or just default
+    if (type === 'info') toast.style.backgroundColor = '#2196F3';
+    else toast.style.backgroundColor = ''; // Reset
+
     setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
 
@@ -509,6 +513,75 @@ function downloadCSV(content, fileName) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+async function searchStudent() {
+    console.log("Buscando alumno...");
+    const searchInput = document.getElementById('searchDNI');
+    const dni = searchInput.value.trim();
+
+    if (!dni || dni.length !== 8) {
+        alert("Por favor ingrese un DNI válido de 8 dígitos.");
+        return;
+    }
+
+    if (!db) return alert("Error: No hay conexión con la base de datos.");
+
+    try {
+        showToast("Buscando en la nube...", "info");
+        const snapshot = await db.collection('students').where('id', '==', dni).get();
+
+        if (snapshot.empty) {
+            alert("❌ Alumno no encontrado con ese DNI.");
+            return;
+        }
+
+        const student = snapshot.docs[0].data();
+
+        // Populate Form for visual confirmation
+        document.getElementById('studentName').value = student.n;
+        document.getElementById('studentDNI').value = student.id;
+        document.getElementById('studentGrade').value = student.g;
+        document.getElementById('studentSection').value = student.s;
+        if (student.p) document.getElementById('parentPhone').value = student.p;
+
+        // Generate QR Logic (Reuse)
+        const qrData = {
+            n: student.n,
+            id: student.id,
+            g: student.g,
+            s: student.s,
+            p: student.p
+        };
+        const qrString = JSON.stringify(qrData);
+
+        const container = document.getElementById('qrcode');
+        container.innerHTML = "";
+
+        qrCodeObj = new QRCode(container, {
+            text: qrString,
+            width: 500,
+            height: 500,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        document.getElementById('downloadBtn').style.display = 'block';
+        const qrText = document.getElementById('qr-text');
+        qrText.innerText = `${student.n} - ${student.g}° "${student.s}"`;
+        qrText.style.display = 'block';
+
+        // ADD LOGO
+        setTimeout(addLogoToQR, 100);
+
+        showToast("✅ Alumno encontrado.", "success");
+        searchInput.value = ""; // Clear search
+
+    } catch (error) {
+        console.error(error);
+        alert("Error al buscar: " + error.message);
+    }
 }
 
 function addLogoToQR() {
