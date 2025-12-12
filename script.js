@@ -209,6 +209,9 @@ async function generateQR() {
                 qrText.innerText = `${existing.n} - ${existing.g}° "${existing.s}"`;
                 qrText.style.display = 'block';
 
+                // ADD LOGO
+                setTimeout(addLogoToQR, 100);
+
                 showToast("QR Recuperado", "success");
             }
             return; // Stop processing
@@ -242,6 +245,9 @@ async function generateQR() {
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
         });
+
+        // ADD LOGO
+        setTimeout(addLogoToQR, 100);
 
         document.getElementById('downloadBtn').style.display = 'block';
         const qrText = document.getElementById('qr-text');
@@ -505,15 +511,49 @@ function downloadCSV(content, fileName) {
     document.body.removeChild(link);
 }
 
+function addLogoToQR() {
+    const container = document.getElementById('qrcode');
+    const canvas = container.querySelector('canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = 'logo.jpg';
+
+    img.onload = () => {
+        // Calculate center and size (20% of QR)
+        const size = canvas.width;
+        const logoSize = size * 0.22;
+        const x = (size - logoSize) / 2;
+        const y = (size - logoSize) / 2;
+
+        // Draw white background circle/square for better contrast
+        ctx.fillStyle = '#ffffff';
+        // ctx.fillRect(x - 2, y - 2, logoSize + 4, logoSize + 4); // Optional white box
+
+        ctx.drawImage(img, x, y, logoSize, logoSize);
+
+        // Update the IMG tag that QRCode.js created, so the user sees the logo
+        // and the download function picks it up.
+        const qrImg = container.querySelector('img');
+        if (qrImg) {
+            qrImg.src = canvas.toDataURL();
+        }
+    };
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
     // renderHistory(); 
 
     // AUTO-RUN DIAGNOSTIC AFTER 2 SECONDS
+    /*
     setTimeout(() => {
         logToScreen("Autoejecutando diagnóstico...");
         diagnoseConnection();
     }, 2000);
+    */
 });
 
 // Global Error Handler
