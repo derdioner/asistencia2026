@@ -202,8 +202,8 @@ async function generateQR() {
 
                 qrCodeObj = new QRCode(container, {
                     text: qrString,
-                    width: 500,
-                    height: 500,
+                    width: 400,
+                    height: 400,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
                     correctLevel: QRCode.CorrectLevel.H
@@ -244,8 +244,8 @@ async function generateQR() {
 
         qrCodeObj = new QRCode(container, {
             text: qrString,
-            width: 500,
-            height: 500,
+            width: 400,
+            height: 400,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
@@ -375,6 +375,8 @@ function stopScanner() {
     // For now we keep it to show updates even in other tab.
 }
 
+const processedScans = new Map(); // Local debounce cache
+
 async function onScanSuccess(decodedText, decodedResult) {
     if (!db) return;
 
@@ -386,14 +388,26 @@ async function onScanSuccess(decodedText, decodedResult) {
         const now = new Date();
         const todayDate = now.toLocaleDateString();
 
-        // Check if recently scanned in LOCAL cache to avoid hitting DB for double scan
-        // This is a "debounce"
+        // --- 1. SYNCHRONOUS DEBOUNCE (CRITICAL FIX) ---
+        // Prevent processing the same DNI multiple times within 5 seconds locally
+        // This stops the "3 times" bug caused by rapid scanner callbacks before DB updates
+        if (processedScans.has(data.id)) {
+            const lastTime = processedScans.get(data.id);
+            if ((now - lastTime) < 5000) {
+                return; // Ignore duplicate scan within 5s
+            }
+        }
+        // Mark as processed immediately
+        processedScans.set(data.id, now);
+
+        // --- 2. LOGIC CHECKS ---
+        // Check if recently scanned in LOCAL cache (via Snapshot) to avoid hitting DB
         const lastScan = currentAttendanceList.find(r => r.dni === data.id);
         if (lastScan && lastScan.displayDate === todayDate) {
-            // Check time difference
-            const lastTime = new Date(lastScan.timestamp.seconds * 1000); // Firestore timestamp
+            // Check time difference (Firestore timestamp)
+            const lastTime = new Date(lastScan.timestamp.seconds * 1000);
             if ((now - lastTime) < 60000) { // 1 minute duplicate protection
-                // Silently ignore or show warning
+                // Silently ignore or show warning if it wasn't caught by the 5s debounce
                 return;
             }
         }
@@ -421,7 +435,38 @@ async function onScanSuccess(decodedText, decodedResult) {
             displayDate: todayDate
         });
 
+        // Trigger Audio Feedback (Optional but helpful)
+        // const beep = new Audio('beep.mp3'); beep.play().catch(e=>{});
+
         showToast(`✅ Asistencia: ${data.n}`, 'success');
+
+        // --- NOTIFICATION LOGIC (Option 1: Semi-Auto) ---
+        const notifyCheckbox = document.getElementById('autoNotify');
+        if (notifyCheckbox && notifyCheckbox.checked) {
+            if (data.p && data.p.length >= 9) {
+                // Determine Greeting based on time
+                const hour = now.getHours();
+                let greeting = "Buenos días";
+                if (hour >= 12) greeting = "Buenas tardes";
+                if (hour >= 18) greeting = "Buenas noches";
+
+                const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.`;
+                const encodedMsg = encodeURIComponent(message);
+
+                // Use wa.me for universal link (opens App on mobile, Web on desktop)
+                // Appending 51 for Peru (User location context implies Peru based on DNI/Logo)
+                // If phone doesn't have country code, we assume +51.
+                let phone = data.p.replace(/\D/g, ''); // strip non-digits
+                if (phone.length === 9) phone = "51" + phone;
+
+                const waLink = `https://wa.me/${phone}?text=${encodedMsg}`;
+
+                // Open in new tab (Mobile will try to open App)
+                window.open(waLink, '_blank');
+            } else {
+                showToast("⚠️ Sin número de apoderado para notificar", "info");
+            }
+        }
 
     } catch (e) {
         console.error("Error parsing/saving QR", e);
@@ -475,21 +520,52 @@ function renderHistory() {
 
 async function clearHistory() {
     if (!db) return;
-    const password = prompt("Ingrese contraseña ADMIN para borrar TOOOODO el historial de la NUBE:");
+    const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN (1234) para REINICIAR el sistema:");
+
     if (password === "1234") {
-        if (confirm("⚠️ ¿ESTÁS SEGURO? Se borrarán todos los registros de asistencia de la base de datos.")) {
-            // Delete logic is heavy in client. Usually done via Admin SDK.
-            // Client side batch delete (limit 500)
-            const snapshot = await db.collection('attendance').get();
-            const batch = db.batch();
-            snapshot.docs.forEach((doc) => {
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-            alert("Historial de nube eliminado.");
+        const choice = prompt("¿Qué desea borrar?\n\nEscribe 1 para: Solo Historial de Asistencia\nEscribe 2 para: REINICIO TOTAL (Asistencia + Alumnos/QRs)");
+
+        if (choice === "1") {
+            if (confirm("¿Confirmar eliminación del HISTORIAL DE ASISTENCIA?")) {
+                await deleteCollection('attendance');
+                alert("Historial eliminado.");
+                renderHistory();
+            }
+        } else if (choice === "2") {
+            const confirmTotal = prompt("🔴 ¡ADVERTENCIA FINAL! 🔴\n\nEsto borrará TODOS los alumnos generados y TODAS las asistencias.\n\nEscribe 'CONFIRMAR' para proceder:");
+            if (confirmTotal === "CONFIRMAR") {
+                showToast("Iniciando borrado total...", "info");
+                await deleteCollection('attendance');
+                await deleteCollection('students');
+                alert("✅ SISTEMA REINICIADO DE FÁBRICA.\nSe han borrado todos los datos.");
+                location.reload(); // Refresh to clear local state
+            } else {
+                alert("Operación cancelada.");
+            }
+        } else {
+            alert("Opción no válida.");
         }
     } else if (password !== null) {
         alert("Contraseña incorrecta.");
+    }
+}
+
+async function deleteCollection(collectionPath) {
+    const batchSize = 400; // Leave safety margin for batch limit (500)
+    let snapshot = await db.collection(collectionPath).limit(batchSize).get();
+    let totalDeleted = 0;
+
+    while (!snapshot.empty) {
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        totalDeleted += snapshot.size;
+        console.log(`Deleted ${snapshot.size} docs from ${collectionPath}`);
+
+        // Get next batch
+        snapshot = await db.collection(collectionPath).limit(batchSize).get();
     }
 }
 
@@ -565,8 +641,8 @@ async function searchStudent() {
 
         qrCodeObj = new QRCode(container, {
             text: qrString,
-            width: 500,
-            height: 500,
+            width: 400,
+            height: 400,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.H
