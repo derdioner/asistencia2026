@@ -40,6 +40,46 @@ function openTab(tabName) {
     }
 }
 
+// --- DIAGNOSTIC TOOL ---
+async function diagnoseConnection() {
+    logToScreen("--- INICIANDO DIAGNÓSTICO ---");
+
+    if (!db) {
+        logToScreen("ERROR CRÍTICO: Firebase no inicializado.");
+        alert("Error: Firebase no está configurado (Ver script.js).");
+        return;
+    }
+
+    try {
+        logToScreen("1. Verificando red...");
+        // Ping Google (fetch favicon) or just rely on Firestore network error
+
+        logToScreen("2. Intentando ESCRIBIR en Firestore...");
+        const testRef = db.collection('_diagnostics').doc('connection_test');
+        await testRef.set({
+            timestamp: new Date().toISOString(),
+            status: 'ok',
+            device: navigator.userAgent
+        });
+
+        logToScreen("✅ ESCRITURA EXITOSA.");
+        logToScreen("La conexión funciona perfectamente.");
+        alert("✅ CONEXIÓN EXITOSA\n\nEl sistema puede leer y escribir en la nube.\nSi tus datos no se guardan, puede ser un problema lógico, pero la conexión está bien.");
+
+    } catch (error) {
+        logToScreen("❌ FALLÓ LA ESCRITURA:");
+        logToScreen(error.code + " - " + error.message);
+
+        if (error.code === 'permission-denied') {
+            alert("🔒 BLOQUEADO POR PERMISOS\n\nTu base de datos está en 'Modo Bloqueado'.\n\nSOLUCIÓN:\n1. Ve a Firebase Console -> Firestore Database -> Reglas.\n2. Cambia 'allow read, write: if false;' por 'allow read, write: if true;'.\n3. Publicar.");
+        } else if (error.code === 'unavailable') {
+            alert("📡 SIN CONEXIÓN\n\nNo se puede contactar con Firebase. Revisa tu internet o firewall.");
+        } else {
+            alert("❌ ERROR DE CONEXIÓN: " + error.message);
+        }
+    }
+}
+
 // --- GENERATOR LOGIC ---
 let qrCodeObj = null;
 let unsubscribeStudents = null;
