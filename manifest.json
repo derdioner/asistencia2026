@@ -1,0 +1,20 @@
+{
+  "name": "Asistencia QR - I.E.E. Genaro Herrera",
+  "short_name": "Asistencia QR",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F0F8FF",
+  "theme_color": "#00B4D8",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
