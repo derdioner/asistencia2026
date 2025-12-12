@@ -212,7 +212,17 @@ async function generateQR() {
         logToScreen("Intentando guardar en nube...");
 
         try {
-            await db.collection('students').add(studentData);
+            // Create a timeout promise
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error("Tiempo de espera agotado (5s). Revisa tu conexión.")), 5000);
+            });
+
+            // Race between Save and Timeout
+            await Promise.race([
+                db.collection('students').add(studentData),
+                timeout
+            ]);
+
             logToScreen("GUARDADO EXITOSO (Confirmado por SDK)");
             showToast("¡Pase Guardado en la Nube!", "success");
 
@@ -224,7 +234,7 @@ async function generateQR() {
         } catch (saveError) {
             logToScreen("ERROR ESCRITURA: " + saveError.message);
             console.error("Error guardando en nube:", saveError);
-            alert("⚠️ El QR se generó, pero NO se pudo guardar en la base de datos de la nube.\n\nVerifica tu conexión a internet.");
+            alert("⚠️ El QR se generó, pero NO se pudo guardar en la nube: " + saveError.message);
         }
 
     } catch (error) {
