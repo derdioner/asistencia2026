@@ -42,6 +42,43 @@ function openTab(tabName) {
 
 // --- GENERATOR LOGIC ---
 let qrCodeObj = null;
+let unsubscribeStudents = null;
+
+// Subscribe to Students List for Live View
+function subscribeToStudents() {
+    if (!db || unsubscribeStudents) return;
+
+    unsubscribeStudents = db.collection('students')
+        .orderBy('created', 'desc') // Requires Index? If simple query, maybe auto. If fails, use no order or client sort.
+        // Actually, 'created' is a string ISO now. String sort works.
+        .limit(5)
+        .onSnapshot((snapshot) => {
+            const list = document.getElementById('generatedList');
+            if (!list) return;
+            list.innerHTML = "";
+
+            if (snapshot.empty) {
+                list.innerHTML = "<tr><td colspan='3' style='text-align:center'>No hay datos</td></tr>";
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const s = doc.data();
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${s.n}</td><td>${s.g}°</td><td>"${s.s}"</td>`;
+                list.appendChild(row);
+            });
+        }, (error) => {
+            console.error("Error obteniendo lista alumnos:", error);
+            const list = document.getElementById('generatedList');
+            if (list) list.innerHTML = `<tr><td colspan='3' style='color:red'>Error: ${error.message}</td></tr>`;
+        });
+}
+
+// Start listener on load or tab switch? 
+// Let's safe init it.
+setTimeout(subscribeToStudents, 1500);
+
 
 async function generateQR() {
     console.log("Intentando generar QR...");
