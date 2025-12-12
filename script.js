@@ -90,13 +90,14 @@ async function generateQR() {
 
             if (proceed) {
                 // Generate QR with existing data
-                const qrString = JSON.stringify({
+                const qrData = {
                     n: existing.n,
                     id: existing.id,
                     g: existing.g,
                     s: existing.s,
                     p: existing.p
-                });
+                };
+                const qrString = JSON.stringify(qrData);
 
                 const container = document.getElementById('qrcode');
                 container.innerHTML = "";
@@ -117,27 +118,24 @@ async function generateQR() {
 
                 showToast("QR Recuperado", "success");
             }
-            return; // Stop processing the "New" registration
+            return; // Stop processing
         }
 
         // Create a data object
+        // Usamos fecha local para evitar problemas con versiones de SDK
         const studentData = {
             n: name,
             id: dni,
             g: grade,
             s: section,
             p: phone,
-            created: firebase.firestore.FieldValue.serverTimestamp() // Cloud timestamp
+            created: new Date().toISOString()
         };
 
-        console.log("Guardando en Firebase...", studentData);
-        // Save to Firestore
-        await db.collection('students').add(studentData);
-        console.log("Guardado exitoso");
-
-        // Convert to string for QR (exclude server timestamp for clean JSON)
+        // --- OPTIMISTIC UI: GENERATE QR IMMEDIATELY ---
+        // Convert to string for QR
         const qrData = { ...studentData };
-        delete qrData.created; // Don't put server obj in QR
+        delete qrData.created; // Clean for QR
         const qrString = JSON.stringify(qrData);
 
         const container = document.getElementById('qrcode');
@@ -157,18 +155,27 @@ async function generateQR() {
         qrText.innerText = `${name} - ${grade}° "${section}"`;
         qrText.style.display = 'block';
 
-        // Success Feedback & Auto-Clear
-        showToast("¡Pase Guardado en la Nube!", "success");
+        // --- BACKGROUND SAVE ---
+        console.log("Guardando en Firebase...", studentData);
 
-        // Clear inputs
-        nameInput.value = '';
-        dniInput.value = '';
-        phoneInput.value = '';
-        nameInput.focus();
+        try {
+            await db.collection('students').add(studentData);
+            console.log("Guardado exitoso");
+            showToast("¡Pase Guardado en la Nube!", "success");
+
+            // Clear inputs ONLY if save was successful
+            nameInput.value = '';
+            dniInput.value = '';
+            phoneInput.value = '';
+            nameInput.focus();
+        } catch (saveError) {
+            console.error("Error guardando en nube:", saveError);
+            alert("⚠️ El QR se generó, pero NO se pudo guardar en la base de datos de la nube.\n\nVerifica tu conexión a internet.");
+        }
 
     } catch (error) {
         console.error("Error FATAL generando:", error);
-        alert("Error al conectar con la base de datos: " + error.message);
+        alert("⚠️ Error inesperado: " + error.message);
     }
 }
 
