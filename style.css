@@ -1,7 +1,7 @@
 :root {
-    --primary-color: #00B4D8;
-    /* Celeste vibrante */
-    --secondary-color: #0096C7;
+    --primary-color: #0096C7;
+    /* Celeste más fuerte */
+    --secondary-color: #0277BD;
     --bg-color: #F0F8FF;
     /* Alice Blue */
     --card-bg: #FFFFFF;
@@ -10,7 +10,7 @@
     --success: #4CAF50;
     --danger: #FF5252;
     --radius: 16px;
-    --shadow: 0 4px 20px rgba(0, 180, 216, 0.15);
+    --shadow: 0 4px 20px rgba(2, 119, 189, 0.15);
 }
 
 * {
@@ -44,6 +44,8 @@ header {
     width: auto;
     margin-bottom: 15px;
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    mix-blend-mode: multiply;
+    /* Make white bg transparent */
 }
 
 header h1 {

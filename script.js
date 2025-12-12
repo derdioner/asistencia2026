@@ -104,8 +104,8 @@ function subscribeToStudents() {
     logToScreen("Suscribiendo a lista (sin orden)...");
 
     unsubscribeStudents = db.collection('students')
-        // .orderBy('created', 'desc') // COMENTADO TEMPORALMENTE (Evitar error índices)
-        .limit(10)
+        .orderBy('created', 'desc') // Ordenar por fecha para ver los ÚLTIMOS REALES
+        .limit(5) // Solo los 5 últimos
         .onSnapshot((snapshot) => {
             logToScreen(`Recibidos ${snapshot.size} alumnos de la nube.`);
 
@@ -125,8 +125,13 @@ function subscribeToStudents() {
                 list.appendChild(row);
             });
         }, (error) => {
-            logToScreen("ERROR LECTURA: " + error.message);
             console.error("Error obteniendo lista alumnos:", error);
+
+            // Check for missing index error
+            if (error.code === 'failed-precondition') {
+                alert("⚠️ REQUIERE ÍNDICE: Para ver los 'Últimos 5' ordenados, Firestore necesita un índice.\n\nAbre la Consola del navegador (F12), mira el error rojo y dale clic al enlace para crearlo automáticamente.");
+            }
+
             const list = document.getElementById('generatedList');
             if (list) list.innerHTML = `<tr><td colspan='3' style='color:red'>Error: ${error.message}</td></tr>`;
         });
@@ -586,33 +591,47 @@ async function searchStudent() {
 
 function addLogoToQR() {
     const container = document.getElementById('qrcode');
-    const canvas = container.querySelector('canvas');
+    if (!container) return;
+
+    // QRCode.js creates a canvas and an img. We need the canvas to draw.
+    let canvas = container.querySelector('canvas');
+    const qrImg = container.querySelector('img');
+
+    // If canvas is missing but img exists (some browsers/libraries hide canvas), recover it
+    if (!canvas && qrImg) {
+        canvas = document.createElement('canvas');
+        canvas.width = qrImg.width;
+        canvas.height = qrImg.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(qrImg, 0, 0);
+    }
+
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    img.crossOrigin = "Anonymous";
     img.src = 'logo.jpg';
 
     img.onload = () => {
-        // Calculate center and size (20% of QR)
         const size = canvas.width;
-        const logoSize = size * 0.22;
+        const logoSize = size * 0.22; // 22% of QR size
         const x = (size - logoSize) / 2;
         const y = (size - logoSize) / 2;
 
-        // Draw white background circle/square for better contrast
+        // Draw white background square for better contrast
         ctx.fillStyle = '#ffffff';
-        // ctx.fillRect(x - 2, y - 2, logoSize + 4, logoSize + 4); // Optional white box
+        ctx.fillRect(x - 5, y - 5, logoSize + 10, logoSize + 10);
 
         ctx.drawImage(img, x, y, logoSize, logoSize);
 
-        // Update the IMG tag that QRCode.js created, so the user sees the logo
-        // and the download function picks it up.
-        const qrImg = container.querySelector('img');
+        // Update the IMG tag so the user sees the result (and download works)
         if (qrImg) {
             qrImg.src = canvas.toDataURL();
         }
+    };
+
+    img.onerror = () => {
+        console.warn("No se encontró logo.jpg");
     };
 }
 
