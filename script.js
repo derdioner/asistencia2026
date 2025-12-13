@@ -1072,6 +1072,10 @@ function loadUsers() {
             `;
             tbody.appendChild(tr);
         });
+    }, error => {
+        console.error("Error loading users:", error);
+        tbody.innerHTML = `<tr><td colspan='5' style='color:red; text-align:center'>Error cargando usuarios: ${error.message}</td></tr>`;
+        showToast("Error de permisos o conexión", "error");
     });
 }
 
