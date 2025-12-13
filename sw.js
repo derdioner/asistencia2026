@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qr-attendance-v5';
+const CACHE_NAME = 'qr-attendance-v6';
 const urlsToCache = [
     './',
     './index.html',
