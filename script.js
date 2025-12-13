@@ -503,32 +503,49 @@ function onScanFailure(error) {
 }
 
 function renderHistory() {
-    const list = document.getElementById('attendanceList');
-    list.innerHTML = "";
+    const container = document.getElementById('attendanceList'); // Now a DIV/Container, not TBODY logic if we change HTML
+    // Per HTML update below, we will target 'scanHistoryContainer' or repurpose 'attendanceList' as a div?
+    // Let's modify index.html first to change table to div container.
+    // Assuming HTML change: list variable now points to a div container.
+
+    // Safety check if we haven't updated HTML yet (still table logic?)
+    // Let's assume we update HTML structure to be a Div container.
+    container.innerHTML = "";
 
     // Check if empty
     if (currentAttendanceList.length === 0) {
-        list.innerHTML = "<tr><td colspan='6' style='text-align:center;'>No hay registros recientes</td></tr>";
+        container.innerHTML = "<div style='text-align:center; padding: 20px; color: #999;'>No hay registros recientes</div>";
         document.getElementById('attendanceCount').innerText = `Total: 0`;
         return;
     }
 
     currentAttendanceList.forEach(record => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${record.displayTime}</td>
-            <td><strong>${record.name}</strong></td>
-            <td>${record.dni}</td>
-            <td>${record.grade}°</td>
-            <td>"${record.section}"</td>
-            <td>${record.phone || '-'}</td>
+        // Calculate status manually if missing or just use it
+        let status = record.status;
+        if (!status && record.timestamp) {
+            status = determineLateness(new Date(record.timestamp.seconds * 1000));
+        }
+        status = status || "Tardanza";
+
+        const isPuntual = status === 'Puntual';
+        const cardClass = isPuntual ? 'puntual' : 'tarde';
+        const badgeClass = isPuntual ? 'status-badge-puntual' : 'status-badge-tarde';
+
+        const card = document.createElement('div');
+        card.className = `history-card-item ${cardClass}`;
+        card.innerHTML = `
+            <div>
+                <div class="h-name">${record.name}</div>
+                <div class="h-meta">${record.grade}° "${record.section}" | DNI: ${record.dni}</div>
+                <div class="h-time">🕑 ${record.displayTime}</div>
+            </div>
+            <div class="h-status ${badgeClass}">
+                ${status}
+            </div>
         `;
-        list.appendChild(row);
+        container.appendChild(card);
     });
 
-    // Update count (Showing count of visible records, mostly today)
-    // To get REAL daily total we would need a separate query count.
-    // For now:
     document.getElementById('attendanceCount').innerText = `Últimos ${currentAttendanceList.length}`;
 }
 

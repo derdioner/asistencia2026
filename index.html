@@ -179,21 +179,10 @@
                     <button class="btn-small" onclick="exportToExcel()">📥 Exportar Excel</button>
                 </div>
                 <div class="table-responsive">
-                    <table id="attendanceTable">
-                        <thead>
-                            <tr>
-                                <th>Hora</th>
-                                <th>Alumno</th>
-                                <th>DNI</th>
-                                <th>Grado</th>
-                                <th>Sección</th>
-                                <th>Apoderado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="attendanceList">
-                            <!-- Rows will be added here -->
-                        </tbody>
-                    </table>
+                    <!-- Cards Container -->
+                    <div id="attendanceList" style="max-height: 400px; overflow-y: auto; padding: 5px;">
+                        <!-- Cards injected by JS -->
+                    </div>
                 </div>
                 <div class="table-actions"
                     style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
