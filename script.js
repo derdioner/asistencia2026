@@ -7,6 +7,49 @@ const firebaseConfig = {
     messagingSenderId: "582998426268",
     appId: "1:582998426268:web:a33229f254386272956359"
 };
+
+// --- PWA SERVICE WORKER REGISTRATION ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
+}
+
+// --- PWA INSTALLATION PROMPT ---
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI to notify the user they can add to home screen
+    if (installBtn) installBtn.style.display = 'block';
+    console.log("PWA Install Prompt Available");
+});
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the A2HS prompt');
+            } else {
+                console.log('User dismissed the A2HS prompt');
+            }
+            deferredPrompt = null;
+            if (installBtn) installBtn.style.display = 'none';
+        });
+    }
+}
+
 // Initialize Firebase
 let db;
 try {
@@ -564,7 +607,7 @@ async function clearHistory() {
         return;
     }
 
-    const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN (339710) para REINICIAR el sistema:");
+    const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN para REINICIAR el sistema:");
 
     if (password === "339710") {
         const choice = prompt("¿Qué desea borrar?\n\nEscribe 1 para: Solo Historial de Asistencia\nEscribe 2 para: REINICIO TOTAL (Asistencia + Alumnos/QRs)");
