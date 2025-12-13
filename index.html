@@ -12,6 +12,7 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -52,6 +53,7 @@
         <div class="tabs" id="mainTabs">
             <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">Modo Generador</button>
             <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">Modo Escáner</button>
+            <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">Reportes</button>
         </div>
 
         <!-- GENERATOR SECTION -->
@@ -197,6 +199,42 @@
                     <span id="attendanceCount" style="font-weight: 600; color: var(--primary-color);">Total: 0</span>
                     <button class="btn-danger" style="width: auto;" onclick="clearHistory()">🗑 Borrar
                         Historial</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORTS SECTION -->
+        <div id="reports" class="tab-content">
+            <!-- SUMMARY CARDS -->
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="card" style="flex: 1; text-align: center; background: #E3F2FD;">
+                    <h3 style="color: #0277BD; margin: 0;">Total</h3>
+                    <p id="reportTotal" style="font-size: 32px; font-weight: bold; margin: 10px 0;">0</p>
+                </div>
+                <div class="card" style="flex: 1; text-align: center; background: #E8F5E9;">
+                    <h3 style="color: #2E7D32; margin: 0;">Puntuales</h3>
+                    <p id="reportPuntual" style="font-size: 32px; font-weight: bold; margin: 10px 0;">0</p>
+                </div>
+                <div class="card" style="flex: 1; text-align: center; background: #FFEBEE;">
+                    <h3 style="color: #C62828; margin: 0;">Tardanzas</h3>
+                    <p id="reportTarde" style="font-size: 32px; font-weight: bold; margin: 10px 0;">0</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Estadística de Asistencia</h3>
+                <div style="height: 300px; display: flex; justify-content: center;">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Acciones</h3>
+                <div class="row">
+                    <button class="btn-primary" onclick="exportReportPDF()" style="flex: 1; background: #546E7A;">🖨
+                        Imprimir Reporte (PDF)</button>
+                    <button class="btn-secondary" onclick="exportToExcel()" style="flex: 1; margin-left: 10px;">📥
+                        Exportar Excel Completo</button>
                 </div>
             </div>
         </div>

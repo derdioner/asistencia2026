@@ -38,6 +38,10 @@ function openTab(tabName) {
     } else {
         stopScanner();
     }
+
+    if (tabName === 'reports') {
+        loadReports();
+    }
 }
 
 // --- DIAGNOSTIC TOOL ---
@@ -432,11 +436,16 @@ async function onScanSuccess(decodedText, decodedResult) {
             phone: data.p,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Server time
             displayTime: now.toLocaleTimeString(),
-            displayDate: todayDate
+            displayDate: todayDate,
+            status: determineLateness(now) // 'Puntual' or 'Tardanza'
         });
 
-        // Trigger Audio Feedback
+        // Trigger Audio Feedback (Sound + Voice)
         playSuccessSound();
+
+        // Calculate styling based on status
+        const isLate = (hour === 7 && minute > 45) || hour >= 8;
+        // Note: determineLateness logic duplicated briefly for display, let's unify.
 
         showToast(`✅ Asistencia: ${data.n}`, 'success');
 
@@ -576,6 +585,20 @@ async function deleteCollection(collectionPath) {
     }
 }
 
+
+// --- HELPER FOR LATENESS ---
+function determineLateness(dateObj) {
+    const hour = dateObj.getHours();
+    const minute = dateObj.getMinutes();
+
+    // Logic: 06:00 to 07:45 is Puntual. 07:46 onwards is Tardanza.
+    // We assume mostly morning usage.
+    if (hour < 7) return 'Puntual';
+    if (hour === 7 && minute <= 45) return 'Puntual';
+
+    return 'Tardanza';
+}
+
 function exportToExcel() {
     if (currentAttendanceList.length === 0) {
         alert("No hay datos cargados para exportar.");
@@ -583,11 +606,12 @@ function exportToExcel() {
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Fecha;Hora;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
+    csvContent += "Fecha;Hora;Estado;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
 
     currentAttendanceList.forEach(row => {
         const safeName = `"${row.name}"`;
-        csvContent += `${row.displayDate};${row.displayTime};${safeName};${row.dni};${row.grade};${row.section};${row.phone}\n`;
+        const status = row.status || 'Puntual'; // Backwards compat
+        csvContent += `${row.displayDate};${row.displayTime};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone}\n`;
     });
 
     downloadCSV(csvContent, `asistencia_cloud_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -801,10 +825,94 @@ function playSuccessSound() {
 
         osc.start();
         osc.stop(ctx.currentTime + 0.5);
+
+        // --- VOICE FEEDBACK ---
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance("Pase por favor");
+            utterance.lang = 'es-ES'; // Spanish
+            utterance.rate = 1.1; // Slightly faster
+            window.speechSynthesis.speak(utterance);
+        }
+
     } catch (e) {
         console.warn("Audio error", e);
     }
 }
+
+// --- REPORTS DASHBOARD ---
+let attendanceChart = null;
+
+async function loadReports() {
+    if (!db) return;
+
+    // Ensure we have the latest data. 
+    // If scanner is running, 'currentAttendanceList' might be enough, but safest is to re-render from local cache.
+    // If empty, user might need to have visited scanner tab or we need to fetch.
+    // For now, let's reuse 'currentAttendanceList' assuming it contains today's data (limit 100).
+    // Better: If array is empty, try to fetch today's data.
+
+    if (currentAttendanceList.length === 0) {
+        // Try fetch simple snapshot of today?
+        // Reuse render logic.
+    }
+
+    const total = currentAttendanceList.length;
+    let puntual = 0;
+    let tarde = 0;
+
+    currentAttendanceList.forEach(r => {
+        const st = r.status || (r.timestamp ? determineLateness(new Date(r.timestamp.seconds * 1000)) : 'Puntual');
+        if (st === 'Tardanza') tarde++;
+        else puntual++;
+    });
+
+    // Update Cards
+    document.getElementById('reportTotal').innerText = total;
+    document.getElementById('reportPuntual').innerText = puntual;
+    document.getElementById('reportTarde').innerText = tarde;
+
+    // Determine color
+    document.getElementById('reportPuntual').style.color = '#2E7D32';
+    document.getElementById('reportTarde').style.color = '#C62828';
+
+    // RENDER CHART
+    renderChart(puntual, tarde);
+}
+
+function renderChart(puntual, tarde) {
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+    // Destroy previous instance
+    if (attendanceChart) {
+        attendanceChart.destroy();
+    }
+
+    attendanceChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Puntuales', 'Tardanzas'],
+            datasets: [{
+                data: [puntual, tarde],
+                backgroundColor: ['#66BB6A', '#EF5350'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+}
+
+function exportReportPDF() {
+    window.print();
+}
+
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
