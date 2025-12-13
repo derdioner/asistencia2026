@@ -187,44 +187,57 @@ async function generateQR() {
         logToScreen(`Verificando DNI ${dni}...`);
         const docRef = await db.collection('students').where('id', '==', dni).get();
         if (!docRef.empty) {
-            logToScreen("DNI detectado como duplicado.");
-            const existing = docRef.docs[0].data();
-            const proceed = confirm(`El alumno ${existing.n} ya existe.\n¿Quieres ver su código QR existente?`);
+            logToScreen("DNI detectado en nube.");
+            const existingDoc = docRef.docs[0];
+            const existing = existingDoc.data();
 
-            if (proceed) {
-                // Generate QR with existing data
-                const qrData = {
-                    n: existing.n,
-                    id: existing.id,
-                    g: existing.g,
-                    s: existing.s,
-                    p: existing.p
-                };
-                const qrString = JSON.stringify(qrData);
+            // Check for differences
+            const hasChanges = (existing.n !== name) || (existing.g !== grade) || (existing.s !== section) || (existing.p !== phone) || (existing.dob !== dob);
 
-                const container = document.getElementById('qrcode');
-                container.innerHTML = "";
+            if (hasChanges) {
+                const doUpdate = confirm(`El alumno ${existing.n} ya existe pero con datos diferentes.\n\n¿Deseas ACTUALIZAR la información con los nuevos datos ingresados?`);
+                if (doUpdate) {
+                    // UPDATE LOGIC
+                    await existingDoc.ref.update({
+                        n: name,
+                        g: grade,
+                        s: section,
+                        p: phone,
+                        dob: dob
+                    });
+                    showToast("Datos actualizados correctamente", "success");
 
-                qrCodeObj = new QRCode(container, {
-                    text: qrString,
-                    width: 400,
-                    height: 400,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-
-                document.getElementById('downloadBtn').style.display = 'block';
-                const qrText = document.getElementById('qr-text');
-                qrText.innerText = `${existing.n} - ${existing.g}° "${existing.s}"`;
-                qrText.style.display = 'block';
-
-                // ADD LOGO
-                setTimeout(addLogoToQR, 100);
-
-                showToast("QR Recuperado", "success");
+                    // Proceed to Generate QR with NEW data
+                    // Fall through to generation logic below (we skip the return)
+                } else {
+                    // Keep Existing
+                    // Generate QR with existing data
+                    const qrData = {
+                        n: existing.n,
+                        id: existing.id,
+                        g: existing.g,
+                        s: existing.s,
+                        p: existing.p,
+                        dob: existing.dob
+                    };
+                    renderQR(qrData); // Reuse helper
+                    return;
+                }
+            } else {
+                const proceed = confirm(`El alumno ${existing.n} ya existe.\n¿Quieres ver su código QR existente?`);
+                if (proceed) {
+                    const qrData = {
+                        n: existing.n,
+                        id: existing.id,
+                        g: existing.g,
+                        s: existing.s,
+                        p: existing.p,
+                        dob: existing.dob
+                    };
+                    renderQR(qrData);
+                }
+                return;
             }
-            return; // Stop processing
         }
 
         // Create a data object
@@ -243,27 +256,8 @@ async function generateQR() {
         // Convert to string for QR
         const qrData = { ...studentData };
         delete qrData.created; // Clean for QR
-        const qrString = JSON.stringify(qrData);
 
-        const container = document.getElementById('qrcode');
-        container.innerHTML = ""; // Clear previous
-
-        qrCodeObj = new QRCode(container, {
-            text: qrString,
-            width: 400,
-            height: 400,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        // ADD LOGO
-        setTimeout(addLogoToQR, 100);
-
-        document.getElementById('downloadBtn').style.display = 'block';
-        const qrText = document.getElementById('qr-text');
-        qrText.innerText = `${name} - ${grade}° "${section}"`;
-        qrText.style.display = 'block';
+        renderQR(qrData);
 
         // --- BACKGROUND SAVE ---
         logToScreen("Intentando guardar en nube...");
@@ -601,9 +595,15 @@ function determineLateness(dateObj) {
     const hour = dateObj.getHours();
     const minute = dateObj.getMinutes();
 
-    // Logic: 06:00 to 07:45 is Puntual. 07:46 onwards is Tardanza.
-    // We assume mostly morning usage.
-    if (hour < 7) return 'Puntual';
+    // STRICT Logic: 06:00 to 07:45 is Puntual.
+    // Anything < 6:00 is technically "Early/Late" but we call it Tardanza per request?
+    // User said: "6:00AM A 7:45 AM ES EL HORARIO NORMAL... FUERA DEL RANGO, TODOS SON TARDANZA"
+
+    // Check range 6:00 to 7:45
+    // If hour is 6, always punctual.
+    // If hour is 7, minute must be <= 45.
+
+    if (hour === 6) return 'Puntual';
     if (hour === 7 && minute <= 45) return 'Puntual';
 
     return 'Tardanza';
@@ -653,7 +653,13 @@ function exportToExcel() {
 
     currentAttendanceList.forEach(row => {
         const safeName = `"${row.name}"`;
-        const status = row.status || 'Puntual'; // Backwards compat
+        // Fallback calculation for old records
+        let status = row.status;
+        if (!status && row.timestamp) {
+            status = determineLateness(new Date(row.timestamp.seconds * 1000));
+        }
+        status = status || 'Tardanza'; // Default safely if no timestamp
+
         csvContent += `${row.displayDate};${row.displayTime};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone}\n`;
     });
 
@@ -760,7 +766,7 @@ function addLogoToQR() {
 
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    img.src = 'logo.jpg';
+    img.src = 'logo.png'; // Updated to PNG
 
     img.onload = () => {
         const size = canvas.width;
@@ -795,6 +801,13 @@ function handleLoginKey(e) {
 function attemptLogin() {
     const pin = document.getElementById('loginPin').value;
     const errorMsg = document.getElementById('loginError');
+
+    // SECURITY: Check Authorized Device
+    if (!checkDeviceAuth()) {
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = "🚫 Dispositivo NO Autorizado.\nSolicite al Director la activación.";
+        return;
+    }
 
     // RESET UI
     document.getElementById('tab-generator').style.display = 'block'; // Reset visibility
@@ -934,6 +947,32 @@ function playBirthdayTune(name) {
     }
 }
 
+
+
+// Helper to reuse QR rendering
+function renderQR(data) {
+    const qrString = JSON.stringify(data);
+    const container = document.getElementById('qrcode');
+    container.innerHTML = "";
+
+    qrCodeObj = new QRCode(container, {
+        text: qrString,
+        width: 400,
+        height: 400,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    document.getElementById('downloadBtn').style.display = 'block';
+    const qrText = document.getElementById('qr-text');
+    qrText.innerText = `${data.n} - ${data.g}° "${data.s}"`;
+    qrText.style.display = 'block';
+
+    // ADD LOGO
+    setTimeout(addLogoToQR, 100);
+}
+
 // --- REPORTS DASHBOARD ---
 let attendanceChart = null;
 
@@ -946,11 +985,16 @@ async function loadReports() {
     // For now, let's reuse 'currentAttendanceList' assuming it contains today's data (limit 100).
     // Better: If array is empty, try to fetch today's data.
 
-    if (currentAttendanceList.length === 0) {
-        // Try fetch simple snapshot of today?
-        // Reuse render logic.
+    // 1. Get Total Registered (Universe)
+    try {
+        const studentsSnap = await db.collection('students').get();
+        document.getElementById('reportRegistered').innerText = studentsSnap.size;
+    } catch (e) {
+        console.warn("Error counting students", e);
+        document.getElementById('reportRegistered').innerText = "-";
     }
 
+    // 2. Attendance Stats
     const total = currentAttendanceList.length;
     let puntual = 0;
     let tarde = 0;
@@ -1008,12 +1052,183 @@ function exportReportPDF() {
     window.print();
 }
 
+function logout() {
+    currentUserRole = null;
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('login-overlay').style.display = 'flex';
+    stopScanner();
+    updateAuthDisplay();
+}
+
+
+// --- DEVICE SECURITY ---
+let logoClicks = 0;
+const MASTER_KEY = "DIRECTOR-MASTER"; // Clave del Director
+
+function checkDeviceAuth() {
+    return localStorage.getItem('DEVICE_AUTHORIZED') === 'true';
+}
+
+function handleLogoClick() {
+    logoClicks++;
+    if (logoClicks === 5) {
+        logoClicks = 0;
+        const input = prompt("🔐 MODO DIRECTOR\n\nIngrese Clave Maestra para autorizar este dispositivo:");
+        if (input === MASTER_KEY) {
+            localStorage.setItem('DEVICE_AUTHORIZED', 'true');
+            alert("✅ ¡Dispositivo Autorizado Exitosamente!");
+            updateAuthDisplay();
+        } else if (input !== null) {
+            alert("❌ Calve Incorrecta");
+        }
+    }
+}
+
+function updateAuthDisplay() {
+    const statusEl = document.getElementById('authStatus');
+    if (statusEl) {
+        if (checkDeviceAuth()) {
+            statusEl.innerText = "🔒 Dispositivo Verificado y Seguro";
+            statusEl.style.color = "#4CAF50"; // Green
+        } else {
+            statusEl.innerText = "🚫 Dispositivo NO Autorizado";
+            statusEl.style.color = "#E57373"; // Red
+        }
+    }
+}
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    // Init Date input to Today
+    const todayISO = new Date().toISOString().split('T')[0];
+    document.getElementById('filterDate').value = todayISO;
+
     // Check if previously logged in? For security, always ask PIN on refresh.
     // logout(); // Ensure clean state
+    updateAuthDisplay();
+
+    // Load default report
+    generateFilteredReport();
 });
+
+async function generateFilteredReport() {
+    if (!db) return;
+
+    const dateVal = document.getElementById('filterDate').value; // YYYY-MM-DD
+    const gradeVal = document.getElementById('filterGrade').value;
+    const sectionVal = document.getElementById('filterSection').value;
+
+    if (!dateVal) {
+        alert("Seleccione una fecha");
+        return;
+    }
+
+    // Convert Filter Date to Display Format (DD/MM/YYYY)
+    // Careful with timezone issues. create Date from value + T12:00
+    const dParts = dateVal.split('-');
+    const displayDateFilter = `${dParts[2]}/${dParts[1]}/${dParts[0]}`;
+
+    // --- 1. FETCH ATTENDANCE FOR DATE ---
+    let attendanceData = [];
+    try {
+        // If date is today and we have local cache, maybe use it? 
+        // Safer to fetch fresh for reports
+        const snap = await db.collection('attendance')
+            .where('displayDate', '==', displayDateFilter)
+            .get();
+
+        snap.forEach(doc => attendanceData.push(doc.data()));
+    } catch (e) {
+        console.error("Error fetching report data", e);
+        showToast("Error cargando reporte", "error");
+        return;
+    }
+
+    // --- 2. FILTER IN MEMORY (Grade/Section) ---
+    // Firestore composite indexes might be needed for .where(G).where(S), so simple filter is safer for small sets.
+    let filteredList = attendanceData.filter(row => {
+        let matchG = (gradeVal === 'todos') || (row.grade == gradeVal);
+        let matchS = (sectionVal === 'todos') || (row.section === sectionVal);
+        return matchG && matchS;
+    });
+
+    // --- 3. CALCULATE STATS ---
+    const total = filteredList.length;
+    let puntual = 0;
+    let tarde = 0;
+
+    filteredList.forEach(r => {
+        const st = r.status || (r.timestamp ? determineLateness(new Date(r.timestamp.seconds * 1000)) : 'Puntual');
+        if (st === 'Tardanza') tarde++;
+        else puntual++;
+        // Attach calculated status for Table use
+        r._calcStatus = st;
+    });
+
+    // --- 4. UPDATE CARDS ---
+    document.getElementById('reportTotal').innerText = total;
+    document.getElementById('reportPuntual').innerText = puntual;
+    document.getElementById('reportTarde').innerText = tarde;
+
+    // Update "Total Registered" context if possible, or show "-" if filtered
+    // For simplicity, we only show Total Registered if filters are "All", otherwise it's confusing.
+    /*
+    if (gradeVal === 'todos' && sectionVal === 'todos') {
+         // fetch global count (already done in loadReports context? we can re-fetch)
+         // ...
+    } else {
+         document.getElementById('reportRegistered').innerText = "-"; 
+    }
+    */
+    // Let's keep the global count logic from before but maybe just leave it as is or refresh it.
+    // Re-fetching global count every time:
+    try {
+        // Ideally we want count where grade == X. 
+        let query = db.collection('students');
+        if (gradeVal !== 'todos') query = query.where('grade', '==', gradeVal);
+        if (sectionVal !== 'todos') query = query.where('section', '==', sectionVal);
+
+        const studSnap = await query.get();
+        document.getElementById('reportRegistered').innerText = studSnap.size;
+    } catch (e) {
+        document.getElementById('reportRegistered').innerText = "-";
+    }
+
+    // --- 5. RENDER CHART ---
+    renderChart(puntual, tarde);
+
+    // --- 6. RENDER TABLE ---
+    const tbody = document.querySelector('#reportTable tbody');
+    tbody.innerHTML = "";
+
+    // Sort by Time
+    filteredList.sort((a, b) => (a.displayTime > b.displayTime) ? 1 : -1);
+
+    filteredList.forEach(row => {
+        const tr = document.createElement('tr');
+        const color = row._calcStatus === 'Tardanza' ? 'color:#C62828' : 'color:#2E7D32';
+        tr.innerHTML = `
+            <td style="border: 1px solid #ddd; padding: 8px;">${row.displayTime}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${row.name}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${row.grade}° ${row.section}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; font-weight:bold; ${color}">${row._calcStatus}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Show Container
+    document.getElementById('reportResultContainer').style.display = 'block';
+
+    // Summary Text
+    const gradeText = gradeVal === 'todos' ? 'Todos los grados' : `${gradeVal}° Grado`;
+    const secText = sectionVal === 'todos' ? 'Todas' : `Sección "${sectionVal}"`;
+    document.getElementById('reportFilterSummary').innerText = `Reporte del ${displayDateFilter} | ${gradeText} - ${secText}`;
+}
+
+// Deprecated old loadReports, pointing to new one
+async function loadReports() {
+    generateFilteredReport();
+}
 
 // Global Error Handler
 window.onerror = function (msg, url, line) {

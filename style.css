@@ -1,304 +1,239 @@
 :root {
-    --primary-color: #0096C7;
-    /* Celeste más fuerte */
-    --secondary-color: #0277BD;
-    --bg-color: #F0F8FF;
-    /* Alice Blue */
-    --card-bg: #FFFFFF;
-    --text-dark: #333333;
-    --text-light: #777777;
-    --success: #4CAF50;
-    --danger: #FF5252;
-    --radius: 16px;
-    --shadow: 0 4px 20px rgba(2, 119, 189, 0.15);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --background-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --danger: #dc3545;
+    --success: #28a745;
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-dark);
-    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.tab-nav {
     display: flex;
-    justify-content: center;
-    padding: 20px;
-}
-
-.app-container {
-    width: 100%;
-    max-width: 500px;
-}
-
-header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.school-logo {
-    height: 100px;
-    width: auto;
-    margin-bottom: 15px;
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-    mix-blend-mode: multiply;
-    /* Make white bg transparent */
-}
-
-header h1 {
-    color: var(--secondary-color);
-    font-size: 28px;
-    font-weight: 600;
-}
-
-header p {
-    color: var(--text-light);
-}
-
-/* TABS */
-.tabs {
-    display: flex;
-    background: #E1F5FE;
-    border-radius: var(--radius);
-    padding: 5px;
-    margin-bottom: 25px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
 }
 
 .tab-btn {
-    flex: 1;
+    padding: 15px 20px;
     border: none;
-    background: transparent;
-    padding: 12px;
-    border-radius: 12px;
+    background: none;
     cursor: pointer;
+    font-size: 16px;
     font-weight: 500;
-    color: var(--text-light);
-    transition: all 0.3s;
+    color: #666;
+    border-bottom: 3px solid transparent;
 }
 
 .tab-btn.active {
-    background: var(--card-bg);
     color: var(--primary-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-bottom: 3px solid var(--primary-color);
 }
 
 .tab-content {
     display: none;
-    animation: fadeIn 0.4s ease;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .tab-content.active {
     display: block;
 }
 
-/* CARDS */
 .card {
     background: var(--card-bg);
-    padding: 25px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
     margin-bottom: 20px;
-    border: 1px solid #EBF7FF;
 }
 
-h2,
-h3 {
-    margin-bottom: 20px;
-    color: var(--text-dark);
-}
-
-/* FORM */
-.form-group {
+.input-field {
+    width: 100%;
+    padding: 10px;
     margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: none;
+}
+
+.scanner-container {
+    padding: 20px;
+    text-align: center;
+}
+
+#reader {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
 }
 
 .row {
     display: flex;
-    gap: 15px;
 }
 
-.row .form-group {
-    flex: 1;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: var(--text-light);
-}
-
-input,
-select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #E0E0E0;
-    border-radius: 10px;
-    font-size: 16px;
-    transition: all 0.3s;
-    background: #FAFAFA;
-}
-
-input:focus,
-select:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    background: #FFF;
-}
-
-button {
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: transform 0.2s;
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-.btn-primary {
-    width: 100%;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 12px;
-}
-
-.btn-secondary {
-    margin-top: 15px;
-    background: transparent;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-    padding: 10px 20px;
-    border-radius: 10px;
-}
-
-.btn-small {
-    background: #E1F5FE;
-    color: var(--secondary-color);
-    border: none;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-}
-
-.btn-danger {
-    width: 100%;
-    background: #FFEBEE;
-    color: var(--danger);
-    border: none;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-/* QR DISPLAY */
-#qrcode-container {
-    margin-top: 25px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-#qrcode img {
-    border: 5px solid white;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-/* SCANNER & TABLE */
-#reader {
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 15px;
-}
-
-.status-text {
-    text-align: center;
-    color: var(--text-light);
-    font-size: 13px;
-}
-
-.history-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.table-responsive {
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-th {
-    text-align: left;
-    color: var(--text-light);
-    font-weight: 500;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #EEE;
-}
-
-td {
-    padding: 10px 0;
-    border-bottom: 1px solid #F5F5F5;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* TOAST NOTIFICATION */
-.toast {
+/* Toast Notification */
+#toast {
     visibility: hidden;
     min-width: 250px;
     background-color: #333;
     color: #fff;
     text-align: center;
-    border-radius: 50px;
+    border-radius: 2px;
     padding: 16px;
     position: fixed;
-    z-index: 1;
-    left: 50%;
+    z-index: 100;
     bottom: 30px;
+    left: 50%;
     transform: translateX(-50%);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.3s, bottom 0.3s;
+    font-size: 17px;
 }
 
-.toast.show {
+#toast.show {
     visibility: visible;
-    opacity: 1;
-    bottom: 50px;
-    /* Slight animation upwards */
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
 
-.toast.success {
+/* Toast Types */
+#toast.success {
     background-color: var(--success);
 }
 
-.toast.error {
+#toast.error {
     background-color: var(--danger);
+}
+
+#toast.info {
+    background-color: #0288D1;
+}
+
+.school-logo {
+    height: 60px;
+    margin-right: 15px;
+}
+
+header {
+    background: #fff;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadein {
+    from {
+        bottom: 0;
+        opacity: 0;
+    }
+
+    to {
+        bottom: 30px;
+        opacity: 1;
+    }
+}
+
+@keyframes fadeout {
+    from {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    to {
+        bottom: 0;
+        opacity: 0;
+    }
+}
+
+/* PRINT STYLES */
+@media print {
+
+    .no-print,
+    .tab-nav,
+    #login-overlay,
+    button {
+        display: none !important;
+    }
+
+    body,
+    .tab-content {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
+    #app-container {
+        display: block !important;
+    }
+
+    #reports {
+        display: block !important;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        margin-bottom: 10px;
+        break-inside: avoid;
+    }
+
+    /* Force Table display */
+    #reportResultContainer {
+        display: block !important;
+    }
+
+    canvas {
+        max-width: 300px !important;
+        max-height: 300px !important;
+        margin: 0 auto;
+    }
 }
