@@ -29,8 +29,9 @@ function openTab(tabName) {
     document.getElementById(tabName).classList.add('active');
 
     // Highlight correct button
-    const activeBtnIndex = tabName === 'generator' ? 0 : 1;
-    buttons[activeBtnIndex].classList.add('active');
+    // Find button that opens this tab
+    const activeBtn = Array.from(buttons).find(btn => btn.getAttribute('onclick') === `openTab('${tabName}')`);
+    if (activeBtn) activeBtn.classList.add('active');
 
     // Start scanner only if tab is scanner
     if (tabName === 'scanner') {
@@ -1107,11 +1108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // logout(); // Ensure clean state
     updateAuthDisplay();
 
-    // Load default report
-    generateFilteredReport();
+    // Load default report (No Print)
+    generateFilteredReport(false);
 });
 
-async function generateFilteredReport() {
+async function generateFilteredReport(autoPrint = false) {
     if (!db) return;
 
     const dateVal = document.getElementById('filterDate').value; // YYYY-MM-DD
@@ -1170,64 +1171,57 @@ async function generateFilteredReport() {
     document.getElementById('reportPuntual').innerText = puntual;
     document.getElementById('reportTarde').innerText = tarde;
 
-    // Update "Total Registered" context if possible, or show "-" if filtered
-    // For simplicity, we only show Total Registered if filters are "All", otherwise it's confusing.
-    /*
-    if (gradeVal === 'todos' && sectionVal === 'todos') {
-         // fetch global count (already done in loadReports context? we can re-fetch)
-         // ...
-    } else {
-         document.getElementById('reportRegistered').innerText = "-"; 
-    }
-    */
-    // Let's keep the global count logic from before but maybe just leave it as is or refresh it.
-    // Re-fetching global count every time:
+    // FIX: User requested "Total Registered" should NOT change with filters.
+    // Always show Global Student Count.
+    // Optimization: check if already loaded? But fetching size is cheap enough or we can cache.
+    // For now, simple query for size.
     try {
-        // Ideally we want count where grade == X. 
-        let query = db.collection('students');
-        if (gradeVal !== 'todos') query = query.where('grade', '==', gradeVal);
-        if (sectionVal !== 'todos') query = query.where('section', '==', sectionVal);
-
-        const studSnap = await query.get();
+        const studSnap = await db.collection('students').get();
         document.getElementById('reportRegistered').innerText = studSnap.size;
     } catch (e) {
-        document.getElementById('reportRegistered').innerText = "-";
+        console.warn("Error getting student count", e);
     }
 
     // --- 5. RENDER CHART ---
     renderChart(puntual, tarde);
 
-    // --- 6. RENDER TABLE ---
-    const tbody = document.querySelector('#reportTable tbody');
+    // --- 6. PREPARE PRINT TABLE ---
+    const tbody = document.getElementById('printTableBody');
     tbody.innerHTML = "";
+
+    // Summary
+    const gradeText = gradeVal === 'todos' ? 'Todos' : `${gradeVal}°`;
+    const secText = sectionVal === 'todos' ? 'Todas' : `"${sectionVal}"`;
+    document.getElementById('printFilterSummary').innerText = `${displayDateFilter} | Grado: ${gradeText} | Sección: ${secText}`;
 
     // Sort by Time
     filteredList.sort((a, b) => (a.displayTime > b.displayTime) ? 1 : -1);
 
-    filteredList.forEach(row => {
+    filteredList.forEach((row, index) => {
         const tr = document.createElement('tr');
-        const color = row._calcStatus === 'Tardanza' ? 'color:#C62828' : 'color:#2E7D32';
+        const color = row._calcStatus === 'Tardanza' ? 'color:#D32F2F' : 'color:#000'; // Make late red even in print? (Usually b/w, but greyscale works)
         tr.innerHTML = `
-            <td style="border: 1px solid #ddd; padding: 8px;">${row.displayTime}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${row.name}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${row.grade}° ${row.section}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; font-weight:bold; ${color}">${row._calcStatus}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: center;">${index + 1}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${row.displayTime}</td>
+            <td style="border: 1px solid #000; padding: 5px;">${row.name}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: center;">${row.grade}° ${row.section}</td>
+            <td style="border: 1px solid #000; padding: 5px; text-align: center; ${color}">${row._calcStatus}</td>
         `;
         tbody.appendChild(tr);
     });
 
-    // Show Container
-    document.getElementById('reportResultContainer').style.display = 'block';
-
-    // Summary Text
-    const gradeText = gradeVal === 'todos' ? 'Todos los grados' : `${gradeVal}° Grado`;
-    const secText = sectionVal === 'todos' ? 'Todas' : `Sección "${sectionVal}"`;
-    document.getElementById('reportFilterSummary').innerText = `Reporte del ${displayDateFilter} | ${gradeText} - ${secText}`;
+    // --- 7. AUTO PRINT ---
+    // Minimal delay to ensure DOM update
+    if (autoPrint) {
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }
 }
 
 // Deprecated old loadReports, pointing to new one
 async function loadReports() {
-    generateFilteredReport();
+    generateFilteredReport(false);
 }
 
 // Global Error Handler

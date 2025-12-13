@@ -240,8 +240,8 @@
                             <option value="H">H</option>
                         </select>
                     </div>
-                    <button onclick="generateFilteredReport()" class="btn-primary"
-                        style="flex: 0 0 auto; height: 42px;">Generar</button>
+                    <button onclick="generateFilteredReport(true)" class="btn-primary"
+                        style="flex: 0 0 auto; height: 42px; background: #546E7A;">🖨 Generar e Imprimir</button>
                 </div>
             </div>
 
@@ -268,23 +268,7 @@
                 </div>
             </div>
 
-            <!-- RESULTS TABLE -->
-            <div class="card" id="reportResultContainer" style="display:none;">
-                <h3>📋 Detalle de Asistencia</h3>
-                <p id="reportFilterSummary" style="font-size: 12px; color: #666; margin-bottom: 10px;"></p>
-                <table class="report-table" id="reportTable"
-                    style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <thead>
-                        <tr style="background: #eee;">
-                            <th style="border: 1px solid #ddd; padding: 8px;">Hora</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Nombre</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">G/S</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <!-- RESULTS TABLE REMOVED PER USER REQUEST -->
 
             <div class="card no-print">
                 <h3>Estadística Visual</h3>
@@ -296,10 +280,9 @@
             <div class="card no-print">
                 <h3>Acciones</h3>
                 <div class="row">
-                    <button class="btn-primary" onclick="window.print()" style="flex: 1; background: #546E7A;">🖨
-                        Imprimir Reporte (PDF)</button>
-                    <button class="btn-secondary" onclick="exportToExcel()" style="flex: 1; margin-left: 10px;">📥
-                        Exportar Excel Asistencia</button>
+                    <!-- Print button removed per request -->
+                    <button class="btn-secondary" onclick="exportToExcel()" style="flex: 1;">📥 Exportar Excel
+                        Asistencia</button>
                 </div>
                 <!-- Database Management -->
                 <div class="row" style="margin-top: 15px;">
@@ -326,6 +309,30 @@
         style="display:none; background: #333; color: #0f0; padding: 10px; margin-top: 20px; font-family: monospace; font-size: 10px; max-height: 200px; overflow-y: scroll; border-radius: 8px;">
         <strong>SISTEMA DE DIAGNÓSTICO:</strong>
         <div id="debug-log">Iniciando...</div>
+    </div>
+
+    <!-- PRINTABLE REPORT (Hidden on Screen) -->
+    <div id="printableReport" class="printable-only" style="display: none;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="logo.png" style="height: 60px;">
+            <h2>Reporte de Asistencia</h2>
+            <h4 id="printFilterSummary"></h4>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: sans-serif;">
+            <thead>
+                <tr style="background: #eee;">
+                    <th style="border: 1px solid #000; padding: 5px;">#</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Hora</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Alumno</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Grado/Sec</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Estado</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBody"></tbody>
+        </table>
+        <div style="margin-top: 30px; text-align: right; font-size: 10px; color: #666;">
+            Generado por Sistema de Asistencia QR
+        </div>
     </div>
 
     <script src="script.js"></script>

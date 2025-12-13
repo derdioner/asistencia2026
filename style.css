@@ -195,45 +195,29 @@ header {
 }
 
 /* PRINT STYLES */
+/* PRINT STYLES */
 @media print {
+    body * {
+        visibility: hidden;
+    }
 
+    #printableReport,
+    #printableReport * {
+        visibility: visible;
+    }
+
+    #printableReport {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* Hide everything else explicitly if needed, but 'body * visibility: hidden' helps */
+    #app-container,
     .no-print,
-    .tab-nav,
-    #login-overlay,
-    button {
+    #login-overlay {
         display: none !important;
-    }
-
-    body,
-    .tab-content {
-        margin: 0;
-        padding: 0;
-        background: white;
-    }
-
-    #app-container {
-        display: block !important;
-    }
-
-    #reports {
-        display: block !important;
-    }
-
-    .card {
-        box-shadow: none;
-        border: 1px solid #ddd;
-        margin-bottom: 10px;
-        break-inside: avoid;
-    }
-
-    /* Force Table display */
-    #reportResultContainer {
-        display: block !important;
-    }
-
-    canvas {
-        max-width: 300px !important;
-        max-height: 300px !important;
-        margin: 0 auto;
     }
 }
