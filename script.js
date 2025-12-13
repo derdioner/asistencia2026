@@ -209,7 +209,17 @@ async function generateQR() {
                     showToast("Datos actualizados correctamente", "success");
 
                     // Proceed to Generate QR with NEW data
-                    // Fall through to generation logic below (we skip the return)
+                    const qrData = {
+                        n: name,
+                        id: dni,
+                        g: grade,
+                        s: section,
+                        p: phone,
+                        dob: dob
+                    };
+                    renderQR(qrData);
+                    showToast("¡Datos Actualizados y QR Regenerado!", "success");
+                    return; // EXIT avoid creating duplicate
                 } else {
                     // Keep Existing
                     // Generate QR with existing data
