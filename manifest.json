@@ -1,7 +1,7 @@
 {
-  "name": "Asistencia QR - I.E.E. Genaro Herrera",
-  "short_name": "Asistencia QR",
-  "start_url": "./index.html",
+  "name": "PROYECTO QR",
+  "short_name": "PROYECTO QR",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#F0F8FF",
   "theme_color": "#00B4D8",

@@ -435,8 +435,8 @@ async function onScanSuccess(decodedText, decodedResult) {
             displayDate: todayDate
         });
 
-        // Trigger Audio Feedback (Optional but helpful)
-        // const beep = new Audio('beep.mp3'); beep.play().catch(e=>{});
+        // Trigger Audio Feedback
+        playSuccessSound();
 
         showToast(`✅ Asistencia: ${data.n}`, 'success');
 
@@ -520,6 +520,13 @@ function renderHistory() {
 
 async function clearHistory() {
     if (!db) return;
+
+    // SECURITY CHECK
+    if (currentUserRole !== 'ADMIN') {
+        alert("⛔ Acceso Denegado: Solo administradores pueden borrar el historial.");
+        return;
+    }
+
     const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN (1234) para REINICIAR el sistema:");
 
     if (password === "1234") {
@@ -711,21 +718,102 @@ function addLogoToQR() {
     };
 }
 
+// --- LOGIN SYSTEM ---
+let currentUserRole = null; // 'ADMIN' or 'AUXILIAR'
+
+function handleLoginKey(e) {
+    if (e.key === 'Enter') attemptLogin();
+}
+
+function attemptLogin() {
+    const pin = document.getElementById('loginPin').value;
+    const errorMsg = document.getElementById('loginError');
+
+    // RESET UI
+    document.getElementById('tab-generator').style.display = 'block'; // Reset visibility
+    const deleteBtn = document.querySelector('button[onclick="clearHistory()"]');
+    if (deleteBtn) deleteBtn.style.display = 'block';
+
+    if (pin === "1234") {
+        // ADMIN
+        currentUserRole = 'ADMIN';
+        loginSuccess("Administrador");
+    } else if (pin === "2026") {
+        // AUXILIAR
+        currentUserRole = 'AUXILIAR';
+
+        // RESTRICTIONS for AUXILIAR
+        document.getElementById('tab-generator').style.display = 'none'; // Hide Generator Tab
+        if (deleteBtn) deleteBtn.style.display = 'none'; // Hide Delete History
+
+        // Force switch to Scanner
+        openTab('scanner');
+
+        loginSuccess("Auxiliar");
+    } else {
+        errorMsg.style.display = 'block';
+        errorMsg.innerText = "PIN Incorrecto";
+        document.getElementById('loginPin').value = "";
+    }
+}
+
+function loginSuccess(roleName) {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    document.getElementById('userRoleDisplay').innerText = roleName;
+    document.getElementById('loginPin').value = "";
+    document.getElementById('loginError').style.display = 'none';
+
+    // If Admin, default to Generator. If Auxiliar, they are already forced to Scanner in previous block.
+    if (currentUserRole === 'ADMIN') {
+        openTab('generator');
+    }
+}
+
+function logout() {
+    currentUserRole = null;
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('login-overlay').style.display = 'flex';
+    stopScanner(); // Stop camera
+}
+
+
+
+function playSuccessSound() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        // Nice "ding" sound: Sine wave, starts at 1000Hz
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1000, ctx.currentTime);
+
+        // Volume envelope: Attack fast, decay smooth
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+        console.warn("Audio error", e);
+    }
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    // renderHistory(); 
-
-    // AUTO-RUN DIAGNOSTIC AFTER 2 SECONDS
-    /*
-    setTimeout(() => {
-        logToScreen("Autoejecutando diagnóstico...");
-        diagnoseConnection();
-    }, 2000);
-    */
+    // Check if previously logged in? For security, always ask PIN on refresh.
+    // logout(); // Ensure clean state
 });
 
 // Global Error Handler
 window.onerror = function (msg, url, line) {
-    logToScreen(`ERROR GLOBAL: ${msg} (Línea ${line})`);
-    alert(`Error de Script: ${msg}`);
+    // logToScreen(`ERROR GLOBAL: ${msg} (Línea ${line})`);
+    console.error(`Error Script: ${msg}`);
 };
