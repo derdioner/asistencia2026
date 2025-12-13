@@ -29,8 +29,8 @@
                 onclick="handleLogoClick()">
             <h2>Bienvenido</h2>
             <p style="margin-bottom: 20px; color: var(--text-light);">Ingrese su PIN de acceso</p>
-            <input type="password" id="loginPin" placeholder="PIN de 4 dígitos" maxlength="4"
-                style="text-align: center; font-size: 24px; letter-spacing: 5px; width: 80%; margin: 0 auto 20px auto;"
+            <input type="password" id="loginPin" placeholder="PIN de 4 dígitos" maxlength="4" inputmode="numeric"
+                style="text-align: center; font-size: 24px; width: 80%; margin: 0 auto 20px auto;"
                 onkeypress="handleLoginKey(event)">
             <button class="btn-primary" onclick="attemptLogin()">INGRESAR</button>
             <p id="loginError" style="color: var(--danger); margin-top: 15px; display: none;"></p>
@@ -62,6 +62,8 @@
             <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">Modo Generador</button>
             <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">Modo Escáner</button>
             <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">Reportes</button>
+            <button class="tab-btn" onclick="openTab('users')" id="tab-users" style="display: none;">👥
+                Usuarios</button>
         </nav>
 
         <!-- GENERATOR SECTION -->
@@ -298,6 +300,62 @@
                         title="Descargar Base de Datos de Alumnos Registrados">
                         📂 Descargar Base de Datos (Alumnos)
                     </button>
+                </div>
+
+                <!-- USERS MANAGEMENT SECTION (ADMIN ONLY) -->
+                <div id="users" class="tab-content">
+                    <div class="row">
+                        <div class="card" style="flex: 1; background: #E3F2FD; text-align: center;">
+                            <h3>Total Usuarios</h3>
+                            <p id="usersCount" style="font-size: 32px; font-weight: bold; color: #1565C0;">0</p>
+                        </div>
+                        <div class="card" style="flex: 2;">
+                            <h3>Agregar Nuevo Usuario</h3>
+                            <div class="row" style="align-items: flex-end;">
+                                <div class="form-group" style="flex: 2;">
+                                    <label>Nombre del Personal</label>
+                                    <input type="text" id="newUserName" class="input-field"
+                                        placeholder="Ej: Auxiliar Juan">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>PIN de Acceso</label>
+                                    <input type="text" id="newUserPin" class="input-field" placeholder="4-6 dígitos"
+                                        maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>Rol</label>
+                                    <select id="newUserRole" class="input-field">
+                                        <option value="AUXILIAR">Auxiliar</option>
+                                        <option value="ADMIN">Administrador</option>
+                                    </select>
+                                </div>
+                                <button onclick="createUser()" class="btn-primary"
+                                    style="height: 42px; margin-bottom: 15px;">
+                                    ➕ Agregar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Lista de Usuarios con Acceso</h3>
+                        <div class="table-responsive">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f5f5f5;">
+                                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Nombre</th>
+                                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Rol</th>
+                                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">PIN</th>
+                                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Último Acceso</th>
+                                        <th style="padding: 10px; border-bottom: 2px solid #ddd;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersListBody">
+                                    <!-- JS will populate -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

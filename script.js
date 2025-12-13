@@ -94,6 +94,10 @@ function openTab(tabName) {
     if (tabName === 'reports') {
         loadReports();
     }
+
+    if (tabName === 'users') {
+        loadUsers();
+    }
 }
 
 // --- DIAGNOSTIC TOOL ---
@@ -866,16 +870,19 @@ function addLogoToQR() {
     };
 }
 
-// --- LOGIN SYSTEM ---
+// --- LOGIN & USER MANAGEMENT SYSTEM ---
 let currentUserRole = null; // 'ADMIN' or 'AUXILIAR'
+let currentUserId = null;   // Firestore Doc ID
 
 function handleLoginKey(e) {
     if (e.key === 'Enter') attemptLogin();
 }
 
-function attemptLogin() {
-    const pin = document.getElementById('loginPin').value;
+async function attemptLogin() {
+    const pin = document.getElementById('loginPin').value.trim();
     const errorMsg = document.getElementById('loginError');
+
+    if (!pin) return;
 
     // SECURITY: Check Authorized Device
     if (!checkDeviceAuth()) {
@@ -884,52 +891,209 @@ function attemptLogin() {
         return;
     }
 
-    // RESET UI
-    document.getElementById('tab-generator').style.display = 'block'; // Reset visibility
-    const deleteBtn = document.querySelector('button[onclick="clearHistory()"]');
-    if (deleteBtn) deleteBtn.style.display = 'block';
+    if (!db) {
+        alert("Error de conexión a la base de datos.");
+        return;
+    }
 
-    if (pin === "1234") {
-        // ADMIN
-        currentUserRole = 'ADMIN';
-        loginSuccess("Administrador");
-    } else if (pin === "2026") {
-        // AUXILIAR
-        currentUserRole = 'AUXILIAR';
+    try {
+        errorMsg.style.display = 'none';
 
-        // RESTRICTIONS for AUXILIAR
-        document.getElementById('tab-generator').style.display = 'none'; // Hide Generator Tab
-        if (deleteBtn) deleteBtn.style.display = 'none'; // Hide Delete History
+        // 1. Check if it's the very first run (Seed Default Admin)
+        await ensureDefaultAdmin();
 
-        // Force switch to Scanner
-        openTab('scanner');
+        // 2. Query Firestore
+        const snapshot = await db.collection('app_users').where('pin', '==', pin).get();
 
-        loginSuccess("Auxiliar");
-    } else {
+        if (snapshot.empty) {
+            errorMsg.style.display = 'block';
+            errorMsg.innerText = "PIN Incorrecto o Usuario no encontrado.";
+            document.getElementById('loginPin').value = "";
+            return;
+        }
+
+        // 3. Login Success
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
+
+        currentUserRole = userData.role;
+        currentUserId = userDoc.id;
+
+        // Update Last Login
+        await userDoc.ref.update({
+            lastLogin: new Date().toISOString()
+        });
+
+        // UI Setup
+        loginSuccess(userData.name, userData.role);
+
+    } catch (e) {
+        console.error("Login Error:", e);
         errorMsg.style.display = 'block';
-        errorMsg.innerText = "PIN Incorrecto";
-        document.getElementById('loginPin').value = "";
+        errorMsg.innerText = "Error de red al verificar usuario.";
     }
 }
 
-function loginSuccess(roleName) {
+async function ensureDefaultAdmin() {
+    // If no users exist at all, create the default one so user isn't locked out.
+    try {
+        const snap = await db.collection('app_users').limit(1).get();
+        if (snap.empty) {
+            console.log("⚠️ No users found. Seeding Default Admin...");
+            await db.collection('app_users').add({
+                name: "Administrador Principal",
+                pin: "1234",
+                role: "ADMIN",
+                lastLogin: new Date().toISOString(),
+                isDefault: true // Marker to prevent deletion if we want to be strict
+            });
+            console.log("✅ Default Admin Created (PIN 1234)");
+        }
+    } catch (e) {
+        console.warn("Could not check/seed default admin:", e);
+    }
+}
+
+function loginSuccess(name, role) {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
-    document.getElementById('userRoleDisplay').innerText = roleName;
+
+    // Display Name & Role
+    document.getElementById('userRoleDisplay').innerText = `${name} (${role})`;
     document.getElementById('loginPin').value = "";
     document.getElementById('loginError').style.display = 'none';
 
-    // If Admin, default to Generator. If Auxiliar, they are already forced to Scanner in previous block.
-    if (currentUserRole === 'ADMIN') {
+    // Show/Hide Elements based on Role
+    const deleteBtn = document.querySelector('button[onclick="clearHistory()"]');
+    const generatorTabBtn = document.getElementById('tab-generator');
+    const usersTabBtn = document.getElementById('tab-users');
+
+    if (role === 'ADMIN') {
+        if (generatorTabBtn) generatorTabBtn.style.display = 'inline-block';
+        if (usersTabBtn) usersTabBtn.style.display = 'inline-block';
+        if (deleteBtn) deleteBtn.style.display = 'block';
+
+        // Default to Generator or Users? Generator is fine.
         openTab('generator');
+    } else {
+        // AUXILIAR
+        if (generatorTabBtn) generatorTabBtn.style.display = 'none';
+        if (usersTabBtn) usersTabBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+
+        openTab('scanner'); // Force scanner
     }
 }
 
 function logout() {
     currentUserRole = null;
+    currentUserId = null;
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('login-overlay').style.display = 'flex';
     stopScanner(); // Stop camera
+    updateAuthDisplay();
+}
+
+
+// --- USER MANAGEMENT FUNCTIONS (ADMIN ONLY) ---
+async function createUser() {
+    if (currentUserRole !== 'ADMIN') return;
+
+    const name = document.getElementById('newUserName').value.trim();
+    const pin = document.getElementById('newUserPin').value.trim();
+    const role = document.getElementById('newUserRole').value;
+
+    if (!name || pin.length < 4) {
+        alert("Por favor ingrese un nombre y un PIN de al menos 4 dígitos.");
+        return;
+    }
+
+    try {
+        // Check duplication
+        const check = await db.collection('app_users').where('pin', '==', pin).get();
+        if (!check.empty) {
+            alert("❌ Ese PIN ya está en uso por otro usuario.");
+            return;
+        }
+
+        await db.collection('app_users').add({
+            name: name,
+            pin: pin,
+            role: role,
+            created: new Date().toISOString(),
+            lastLogin: "Nunca"
+        });
+
+        showToast("✅ Usuario agregado correctamente", "success");
+        // Clear inputs
+        document.getElementById('newUserName').value = "";
+        document.getElementById('newUserPin').value = "";
+
+        loadUsers(); // Refresh list automatically
+    } catch (e) {
+        console.error(e);
+        alert("Error al crear usuario: " + e.message);
+    }
+}
+
+let unsubscribeUsers = null;
+
+function loadUsers() {
+    if (currentUserRole !== 'ADMIN') return;
+    if (unsubscribeUsers) return; // Already listening
+
+    const tbody = document.getElementById('usersListBody');
+    const countEl = document.getElementById('usersCount');
+
+    unsubscribeUsers = db.collection('app_users').orderBy('name').onSnapshot(snapshot => {
+        tbody.innerHTML = "";
+        countEl.innerText = snapshot.size;
+
+        if (snapshot.empty) {
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No hay usuarios</td></tr>";
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const u = doc.data();
+            const isMe = (doc.id === currentUserId);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>${u.name}</strong> ${isMe ? '(Tú)' : ''}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">${u.role}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; font-family: monospace;">***</td> 
+                <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; color: #666;">
+                    ${formatDateFriendly(u.lastLogin)}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    ${!isMe ? `<button onclick="deleteUser('${doc.id}', '${u.name}')" style="background:#FFEBEE; color:#C62828; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Eliminar</button>` : '<span style="color:#ccc">---</span>'}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+async function deleteUser(docId, userName) {
+    if (!confirm(`¿Estás seguro de ELIMINAR al usuario "${userName}"?\n\nEsta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    try {
+        await db.collection('app_users').doc(docId).delete();
+        showToast("🗑 Usuario eliminado.", "info");
+    } catch (e) {
+        alert("Error: " + e.message);
+    }
+}
+
+function formatDateFriendly(isoString) {
+    if (!isoString || isoString === 'Nunca') return 'Nunca';
+    try {
+        const d = new Date(isoString);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return isoString; }
 }
 
 
