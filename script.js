@@ -164,6 +164,7 @@ async function generateQR() {
     const grade = gradeInput.value;
     const section = sectionInput.value;
     const phone = phoneInput.value.trim();
+    const dob = document.getElementById('studentDOB').value;
 
     // Validation
     if (!name || !dni) {
@@ -234,6 +235,7 @@ async function generateQR() {
             g: grade,
             s: section,
             p: phone,
+            dob: dob,
             created: new Date().toISOString()
         };
 
@@ -309,12 +311,13 @@ async function exportGeneratedDatabase() {
         }
 
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
+        csvContent += "Nombre;DNI;Fecha Nacimiento;Grado;Seccion;Telefono Apoderado\n";
 
         snapshot.forEach(doc => {
             const st = doc.data();
             const safeName = `"${st.n}"`;
-            csvContent += `${safeName};${st.id};${st.g};${st.s};${st.p || ''}\n`;
+            const dob = st.dob || '';
+            csvContent += `${safeName};${st.id};${dob};${st.g};${st.s};${st.p || ''}\n`;
         });
 
         downloadCSV(csvContent, "BaseDatos_Alumnos_Cloud.csv");
@@ -440,14 +443,21 @@ async function onScanSuccess(decodedText, decodedResult) {
             status: determineLateness(now) // 'Puntual' or 'Tardanza'
         });
 
-        // Trigger Audio Feedback (Sound + Voice)
-        playSuccessSound();
+        // --- BIRTHDAY CHECK ---
+        const isBirthday = checkBirthday(data.dob);
+
+        if (isBirthday) {
+            playBirthdayTune(data.n); // Special Melody + Greeting
+            showToast(`🎂🎉 ¡FELIZ CUMPLEAÑOS ${data.n}! 🎉🎂`, 'info'); // Using info style for blue/different color
+        } else {
+            // Standard Feedback (Sound + Voice)
+            playSuccessSound();
+            showToast(`✅ Asistencia: ${data.n}`, 'success');
+        }
 
         // Calculate styling based on status
-        const isLate = (hour === 7 && minute > 45) || hour >= 8;
+        const isLate = (now.getHours() === 7 && now.getMinutes() > 45) || now.getHours() >= 8;
         // Note: determineLateness logic duplicated briefly for display, let's unify.
-
-        showToast(`✅ Asistencia: ${data.n}`, 'success');
 
         // --- NOTIFICATION LOGIC (Option 1: Semi-Auto) ---
         const notifyCheckbox = document.getElementById('autoNotify');
@@ -597,6 +607,39 @@ function determineLateness(dateObj) {
     if (hour === 7 && minute <= 45) return 'Puntual';
 
     return 'Tardanza';
+}
+
+function checkBirthday(dobString) {
+    if (!dobString) return false;
+    // dobString format usually YYYY-MM-DD from HTML input
+    // User might have scanned an old QR without DOB, assumes false.
+    try {
+        // Parse UTC components to avoid timezone shifts
+        const parts = dobString.split('-');
+        if (parts.length !== 3) return false;
+
+        const birthMonth = parseInt(parts[1], 10);
+        const birthDay = parseInt(parts[2], 10);
+
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 0-indexed
+        const currentDay = now.getDate();
+
+        return (birthMonth === currentMonth && birthDay === currentDay);
+    } catch (e) {
+        console.warn("Date parse error", e);
+        return false;
+    }
+}
+
+function playBirthdayTune(name) {
+    // Placeholder for a more complex birthday tune
+    // For now, a simple chime and a voice message
+    const audio = new Audio('sounds/birthday_chime.mp3'); // Assume this file exists
+    audio.play().catch(e => console.error("Error playing birthday audio:", e));
+
+    const msg = `Feliz cumpleaños ${name}!`;
+    speak(msg);
 }
 
 function exportToExcel() {
@@ -833,6 +876,58 @@ function playSuccessSound() {
             utterance.rate = 1.1; // Slightly faster
             window.speechSynthesis.speak(utterance);
         }
+
+    } catch (e) {
+        console.warn("Audio error", e);
+    }
+}
+
+
+
+function playBirthdayTune(name) {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        const ctx = new AudioContext();
+
+        // Simple "Happy Birthday" Notes (Key of C)
+        // G4, G4, A4, G4, C5, B4
+        const notes = [
+            { f: 392.00, d: 0.25, t: 0 },    // G4
+            { f: 392.00, d: 0.25, t: 0.3 },  // G4
+            { f: 440.00, d: 0.5, t: 0.6 },  // A4
+            { f: 392.00, d: 0.5, t: 1.2 },  // G4
+            { f: 523.25, d: 0.5, t: 1.8 },  // C5
+            { f: 493.88, d: 0.8, t: 2.4 }   // B4
+        ];
+
+        notes.forEach(note => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'triangle'; // Brighter sound
+            osc.frequency.value = note.f;
+
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + note.t);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + note.t + note.d);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(ctx.currentTime + note.t);
+            osc.stop(ctx.currentTime + note.t + note.d);
+        });
+
+        // --- VOICE ---
+        setTimeout(() => {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(`¡Feliz Cumpleaños ${name}! Pase por favor`);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }, 500); // Start talking slightly after music starts
 
     } catch (e) {
         console.warn("Audio error", e);

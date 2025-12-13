@@ -112,17 +112,16 @@
                 </div>
                 <div class="row">
                     <div class="form-group">
-                        <label>Numero Apoderado</label>
                         <input type="text" id="parentPhone" placeholder="999 999 999 (9 dígitos)" maxlength="9"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                     </div>
-                    <div class="form-group" style="display: flex; align-items: flex-end;">
-                        <button onclick="exportGeneratedDatabase()" class="btn-small"
-                            style="width: 100%; height: 50px; background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2;"
-                            title="Descargar Base de Datos">
-                            📂 Descargar Base de Datos
-                        </button>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" id="studentDOB">
                     </div>
+
                 </div>
 
                 <button class="btn-primary" onclick="generateQR()">Generar QR</button>
@@ -234,7 +233,15 @@
                     <button class="btn-primary" onclick="exportReportPDF()" style="flex: 1; background: #546E7A;">🖨
                         Imprimir Reporte (PDF)</button>
                     <button class="btn-secondary" onclick="exportToExcel()" style="flex: 1; margin-left: 10px;">📥
-                        Exportar Excel Completo</button>
+                        Exportar Excel Asistencia</button>
+                </div>
+                <!-- Database Management -->
+                <div class="row" style="margin-top: 15px;">
+                    <button onclick="exportGeneratedDatabase()" class="btn-small"
+                        style="width: 100%; background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2; padding: 12px;"
+                        title="Descargar Base de Datos de Alumnos Registrados">
+                        📂 Descargar Base de Datos (Alumnos)
+                    </button>
                 </div>
             </div>
         </div>
