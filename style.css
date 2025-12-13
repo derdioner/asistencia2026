@@ -205,6 +205,23 @@ header {
     }
 }
 
+/* WELCOME ANIMATION */
+.animate-welcome {
+    animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) both;
+}
+
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
 /* PRINT STYLES */
 /* History Table Styling */
 /* History Table Styling (Shared) */
