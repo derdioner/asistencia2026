@@ -118,7 +118,18 @@ body {
 
 .row {
     display: flex;
+    gap: 15px;
+    /* Adds nice spacing between columns */
+    align-items: flex-end;
+    /* Aligns buttons with inputs nicely */
 }
+
+.form-group {
+    flex: 1;
+    /* Ensures they take equal space in a row */
+    margin-bottom: 15px;
+}
+
 
 /* Toast Notification */
 #toast {
@@ -195,6 +206,46 @@ header {
 }
 
 /* PRINT STYLES */
+/* History Table Styling */
+/* History Table Styling (Shared) */
+#attendanceTable,
+#generatedTable {
+    width: 100%;
+    border-collapse: collapse;
+    /* Ensure clean shared borders */
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+#attendanceTable th,
+#attendanceTable td,
+#generatedTable th,
+#generatedTable td {
+    border: 1px solid #bbb;
+    /* The "Squares" look */
+    padding: 12px;
+    /* Cells */
+    text-align: left;
+}
+
+#attendanceTable th,
+#generatedTable th {
+    background-color: #f0f0f0;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #aaa;
+}
+
+#attendanceTable tbody tr:nth-child(even),
+#generatedTable tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#attendanceTable tbody tr:hover,
+#generatedTable tbody tr:hover {
+    background-color: #e3f2fd;
+}
+
 /* PRINT STYLES */
 @media print {
     body * {

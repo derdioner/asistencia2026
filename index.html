@@ -52,11 +52,11 @@
             </div>
         </header>
 
-        <div class="tabs" id="mainTabs">
+        <nav class="tab-nav" id="mainTabs">
             <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">Modo Generador</button>
             <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">Modo Escáner</button>
             <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">Reportes</button>
-        </div>
+        </nav>
 
         <!-- GENERATOR SECTION -->
         <div id="generator" class="tab-content active">
@@ -81,17 +81,17 @@
                 <h2>Generar Pase de Alumno</h2>
                 <div class="form-group">
                     <label>Nombre Completo</label>
-                    <input type="text" id="studentName" placeholder="Ej: Juan Pérez">
+                    <input type="text" id="studentName" class="input-field" placeholder="Ej: Juan Pérez">
                 </div>
                 <div class="form-group">
                     <label>DNI</label>
-                    <input type="text" id="studentDNI" placeholder="Documento de Identidad (8 dígitos)" maxlength="8"
+                    <input type="text" id="studentDNI" class="input-field" placeholder="DNI (8 dígitos)" maxlength="8"
                         oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                 </div>
                 <div class="row">
                     <div class="form-group">
                         <label>Grado</label>
-                        <select id="studentGrade">
+                        <select id="studentGrade" class="input-field" style="margin-bottom:0;">
                             <option value="1">1°</option>
                             <option value="2">2°</option>
                             <option value="3">3°</option>
@@ -101,7 +101,7 @@
                     </div>
                     <div class="form-group">
                         <label>Sección</label>
-                        <select id="studentSection">
+                        <select id="studentSection" class="input-field" style="margin-bottom:0;">
                             <option value="A">A</option>
                             <option value="B">B</option>
                             <option value="C">C</option>
@@ -109,21 +109,21 @@
                             <option value="E">E</option>
                             <option value="F">F</option>
                             <option value="G">G</option>
+                            <option value="H">H</option>
                         </select>
                     </div>
                 </div>
                 <div class="row">
                     <div class="form-group">
-                        <input type="text" id="parentPhone" placeholder="999 999 999 (9 dígitos)" maxlength="9"
+                        <label>Teléfono Apoderado</label>
+                        <input type="text" id="parentPhone" class="input-field" style="margin-bottom:0;"
+                            placeholder="999 999 999" maxlength="9"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                     </div>
-                </div>
-                <div class="row">
                     <div class="form-group">
                         <label>Fecha de Nacimiento</label>
-                        <input type="date" id="studentDOB">
+                        <input type="date" id="studentDOB" class="input-field" style="margin-bottom:0;">
                     </div>
-
                 </div>
 
                 <button class="btn-primary" onclick="generateQR()">Generar QR</button>
@@ -138,7 +138,7 @@
 
             <!-- LIVE PREVIEW OF DB -->
             <div class="card">
-                <h3>Últimos Registrados (Nube)</h3>
+                <h3>Últimos Registros</h3>
                 <div class="table-responsive">
                     <table id="generatedTable">
                         <thead>
@@ -176,13 +176,23 @@
             <div class="card history-card">
                 <div class="history-header">
                     <h3>Historial de Hoy</h3>
-                    <button class="btn-small" onclick="exportToExcel()">📥 Exportar Excel</button>
                 </div>
                 <div class="table-responsive">
-                    <!-- Cards Container -->
-                    <div id="attendanceList" style="max-height: 400px; overflow-y: auto; padding: 5px;">
-                        <!-- Cards injected by JS -->
-                    </div>
+                    <table id="attendanceTable" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Alumno</th>
+                                <th>DNI</th>
+                                <th>Grado</th>
+                                <th>Sección</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceList">
+                            <!-- Rows will be added here -->
+                        </tbody>
+                    </table>
                 </div>
                 <div class="table-actions"
                     style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
@@ -230,7 +240,8 @@
                         </select>
                     </div>
                     <button onclick="generateFilteredReport(true)" class="btn-primary"
-                        style="flex: 0 0 auto; height: 42px; background: #546E7A;">🖨 Generar e Imprimir</button>
+                        style="width: auto; padding: 0 15px; height: 42px; background: #546E7A; font-size: 14px;">🖨
+                        Imprimir Reporte</button>
                 </div>
             </div>
 
@@ -286,7 +297,7 @@
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; color: var(--secondary-color); border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.6;">Versión: 12-Dic-16:30 (Force Refresh)</span>
+            <br><span style="font-size: 10px; opacity: 0.6;"> Versión 1-12/12/25 (Derdioner)</span>
         </footer>
     </div>
 

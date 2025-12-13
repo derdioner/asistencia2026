@@ -350,11 +350,16 @@ function startScanner() {
         // For simplicity: Order by timestamp desc limit 100.
         unsubscribeListener = db.collection('attendance')
             .orderBy('timestamp', 'desc')
-            .limit(100)
+            .limit(200) // Increase limit to ensure we catch all of today even if mixed
             .onSnapshot((snapshot) => {
+                const todayStr = new Date().toLocaleDateString();
                 currentAttendanceList = [];
                 snapshot.forEach(doc => {
-                    currentAttendanceList.push(doc.data());
+                    const data = doc.data();
+                    // STRICT filtering: Only show THIS calendar day
+                    if (data.displayDate === todayStr) {
+                        currentAttendanceList.push(data);
+                    }
                 });
                 renderHistory(); // Auto-update table
             });
@@ -503,18 +508,12 @@ function onScanFailure(error) {
 }
 
 function renderHistory() {
-    const container = document.getElementById('attendanceList'); // Now a DIV/Container, not TBODY logic if we change HTML
-    // Per HTML update below, we will target 'scanHistoryContainer' or repurpose 'attendanceList' as a div?
-    // Let's modify index.html first to change table to div container.
-    // Assuming HTML change: list variable now points to a div container.
-
-    // Safety check if we haven't updated HTML yet (still table logic?)
-    // Let's assume we update HTML structure to be a Div container.
-    container.innerHTML = "";
+    const list = document.getElementById('attendanceList');
+    list.innerHTML = "";
 
     // Check if empty
     if (currentAttendanceList.length === 0) {
-        container.innerHTML = "<div style='text-align:center; padding: 20px; color: #999;'>No hay registros recientes</div>";
+        list.innerHTML = "<tr><td colspan='6' style='text-align:center; padding: 15px;'>No hay registros recientes</td></tr>";
         document.getElementById('attendanceCount').innerText = `Total: 0`;
         return;
     }
@@ -528,22 +527,19 @@ function renderHistory() {
         status = status || "Tardanza";
 
         const isPuntual = status === 'Puntual';
-        const cardClass = isPuntual ? 'puntual' : 'tarde';
-        const badgeClass = isPuntual ? 'status-badge-puntual' : 'status-badge-tarde';
+        const color = isPuntual ? '#2E7D32' : '#C62828';
+        const bg = isPuntual ? '#E8F5E9' : '#FFEBEE';
 
-        const card = document.createElement('div');
-        card.className = `history-card-item ${cardClass}`;
-        card.innerHTML = `
-            <div>
-                <div class="h-name">${record.name}</div>
-                <div class="h-meta">${record.grade}° "${record.section}" | DNI: ${record.dni}</div>
-                <div class="h-time">🕑 ${record.displayTime}</div>
-            </div>
-            <div class="h-status ${badgeClass}">
-                ${status}
-            </div>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${record.displayTime}</td>
+            <td><strong>${record.name}</strong></td>
+            <td>${record.dni}</td>
+            <td>${record.grade}°</td>
+            <td>"${record.section}"</td>
+            <td style="color:${color}; font-weight:bold; background-color:${bg}; text-align:center;">${status}</td>
         `;
-        container.appendChild(card);
+        list.appendChild(row);
     });
 
     document.getElementById('attendanceCount').innerText = `Últimos ${currentAttendanceList.length}`;
