@@ -554,9 +554,9 @@ async function clearHistory() {
         return;
     }
 
-    const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN (1234) para REINICIAR el sistema:");
+    const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN (339710) para REINICIAR el sistema:");
 
-    if (password === "1234") {
+    if (password === "339710") {
         const choice = prompt("¿Qué desea borrar?\n\nEscribe 1 para: Solo Historial de Asistencia\nEscribe 2 para: REINICIO TOTAL (Asistencia + Alumnos/QRs)");
 
         if (choice === "1") {
