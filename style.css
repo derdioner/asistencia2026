@@ -51,6 +51,8 @@ body {
 
 .tab-content.active {
     display: block;
+    flex: 1;
+    /* Causes the content to grow and push footer down */
 }
 
 .card {
