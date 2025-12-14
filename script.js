@@ -967,16 +967,40 @@ function loginSuccess(name, role) {
     document.getElementById('loginError').style.display = 'none';
 
     // Show/Hide Elements based on Role
-    // REPORTE 2 has no special logic now, it is open for all or handled same as others
-    if (role === 'ADMIN') {
-        if (generatorTabBtn) generatorTabBtn.style.display = 'inline-block';
-        if (deleteBtn) deleteBtn.style.display = 'block';
+    const deleteBtn = document.querySelector('button[onclick="clearHistory()"]');
 
-        // Default to Generator or Users? Generator is fine.
+    // Tab Buttons
+    const tabGenerator = document.getElementById('tab-generator');
+    const tabScanner = document.getElementById('tab-scanner');
+    const tabReports = document.getElementById('tab-reports');
+    const tabUsers = document.getElementById('tab-report2'); // Named 'Usuarios' now
+
+    // Reset all to visible first, then hide based on role
+    if (tabGenerator) tabGenerator.style.display = 'inline-block';
+    if (tabScanner) tabScanner.style.display = 'inline-block';
+    if (tabReports) tabReports.style.display = 'inline-block';
+    if (tabUsers) tabUsers.style.display = 'inline-block';
+    if (deleteBtn) deleteBtn.style.display = 'block';
+
+    if (role === 'ADMIN') {
+        // Show ALL (Already visible)
         openTab('generator');
+
+    } else if (role === 'SIAGIE') {
+        // SIAGIE logic: Only Generator & Reports
+        if (tabScanner) tabScanner.style.display = 'none';
+        if (tabUsers) tabUsers.style.display = 'none';
+
+        // Hide delete history button? Usually admin only.
+        if (deleteBtn) deleteBtn.style.display = 'none';
+
+        openTab('reports'); // Default to Reports
+
     } else {
-        // AUXILIAR
-        if (generatorTabBtn) generatorTabBtn.style.display = 'none';
+        // AUXILIAR (Default)
+        // Show Scanner & Reports. Hide Generator & Users.
+        if (tabGenerator) tabGenerator.style.display = 'none';
+        if (tabUsers) tabUsers.style.display = 'none';
         if (deleteBtn) deleteBtn.style.display = 'none';
 
         openTab('scanner'); // Force scanner
@@ -1590,6 +1614,38 @@ async function generateFilteredReport(autoPrint = false) {
         setTimeout(() => {
             window.print();
         }, 500);
+    }
+}
+
+async function revokeAllDevices() {
+    if (!confirm("⚠️ ¿REVOCAR ABSOLUTAMENTE TODOS LOS DISPOSITIVOS?\n\nEsta acción borrará TODOS los permisos de acceso.\nTodos los dispositivos (incluido este) perderán el acceso y deberán volver a usar la clave Maestra.")) {
+        return;
+    }
+
+    const input = prompt("Para confirmar, escribe: BORRAR TODO");
+    if (input !== 'BORRAR TODO') {
+        alert("Acción cancelada.");
+        return;
+    }
+
+    try {
+        const snap = await db.collection('devices').get();
+        if (snap.empty) {
+            alert("No hay dispositivos registrados para borrar.");
+            return;
+        }
+
+        const batch = db.batch();
+        snap.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        alert("✅ Todos los dispositivos han sido eliminados correctamente.");
+        logoutAndDeauthorize();
+    } catch (e) {
+        console.error(e);
+        alert("Error al borrar dispositivos: " + e.message);
     }
 }
 
