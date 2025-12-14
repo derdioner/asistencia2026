@@ -85,8 +85,8 @@
             <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">📝 Generador</button>
             <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">📷 Escáner</button>
             <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">📊 Reportes</button>
-            <button class="tab-btn" onclick="openTab('users')" id="tab-users" style="display: none;">👥
-                Usuarios</button>
+            <button class="tab-btn" onclick="openTab('report2')" id="tab-report2">👥 Usuarios</button>
+            <button class="tab-btn" onclick="openTab('roles')" id="tab-roles" style="display: none;">� Roles</button>
         </nav>
 
         <!-- GENERATOR SECTION -->
@@ -324,84 +324,110 @@
                         📂 Descargar Base de Datos (Alumnos)
                     </button>
                 </div>
+            </div>
+        </div>
 
-                <!-- USERS MANAGEMENT SECTION (ADMIN ONLY) -->
-                <!-- USERS MANAGEMENT SECTION (ADMIN ONLY) -->
-                <div id="users" class="tab-content" style="width: 100%; max-width: 900px; margin: 0 auto;">
+        <!-- REPORT 2 SECTION -->
+        <div id="report2" class="tab-content">
+            <div class="card">
+                <h3>Gestión de Usuarios</h3>
 
-                    <!-- Stats & Add User Row -->
-                    <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap;">
-                        <!-- Counter Card -->
-                        <div class="card"
-                            style="flex: 1; min-width: 200px; background: #E3F2FD; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 style="margin: 0; color: #1565C0;">Total Usuarios</h3>
-                            <p id="usersCount"
-                                style="font-size: 40px; font-weight: bold; color: #0D47A1; margin: 10px 0;">0</p>
-                        </div>
-
-                        <!-- Add User Form -->
-                        <div class="card" style="flex: 2; min-width: 300px;">
-                            <h3 style="margin-top: 0;">Agregar Nuevo Personal</h3>
-                            <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                                <div style="flex: 2; min-width: 150px;">
-                                    <label style="font-size: 12px; color: #666;">Nombre Completo</label>
-                                    <input type="text" id="newUserName" class="input-field"
-                                        placeholder="Ej. Auxiliar Sala" style="margin-bottom: 0;">
-                                </div>
-                                <div style="flex: 1; min-width: 100px;">
-                                    <label style="font-size: 12px; color: #666;">PIN (4-6)</label>
-                                    <input type="text" id="newUserPin" class="input-field" placeholder="1234"
-                                        maxlength="6" inputmode="numeric" style="margin-bottom: 0;">
-                                </div>
-                                <div style="flex: 1; min-width: 120px;">
-                                    <label style="font-size: 12px; color: #666;">Rol</label>
-                                    <select id="newUserRole" class="input-field" style="margin-bottom: 0;">
-                                        <option value="AUXILIAR">Auxiliar</option>
-                                        <option value="ADMIN">Admin</option>
-                                    </select>
-                                </div>
-                                <button onclick="createUser()" class="btn-primary"
-                                    style="flex: 0 0 auto; width: auto; height: 42px; display: flex; align-items: center; justify-content: center;">
-                                    ➕ Agregar
-                                </button>
-                            </div>
-                        </div>
+                <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="card"
+                        style="flex: 1; min-width: 200px; background: #E3F2FD; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <h3 style="margin: 0; color: #1565C0;">Total Usuarios</h3>
+                        <p id="usersCount" style="font-size: 40px; font-weight: bold; color: #0D47A1; margin: 10px 0;">0
+                        </p>
                     </div>
 
-                    <!-- Users Table -->
-                    <div class="card">
-                        <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0;">Directorio de
-                            Personal</h3>
-                        <div class="table-responsive">
-                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                                <thead style="background: #f8f9fa;">
-                                    <tr>
-                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">
-                                            Nombre</th>
-                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Rol
-                                        </th>
-                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">PIN
-                                        </th>
-                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">
-                                            Último Acceso</th>
-                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">
-                                            Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="usersListBody">
-                                    <!-- Populated by JS -->
-                                </tbody>
-                            </table>
+                    <div class="card" style="flex: 2; min-width: 300px;">
+                        <h3 style="margin-top: 0;">Agregar Nuevo Personal</h3>
+                        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                            <div style="flex: 2; min-width: 150px;">
+                                <label style="font-size: 12px; color: #666;">Nombre Completo</label>
+                                <input type="text" id="newUserName" class="input-field" placeholder="Ej. Auxiliar Sala"
+                                    style="margin-bottom: 0;">
+                            </div>
+                            <div style="flex: 1; min-width: 100px;">
+                                <label style="font-size: 12px; color: #666;">PIN (4-6)</label>
+                                <input type="text" id="newUserPin" class="input-field" placeholder="1234" maxlength="6"
+                                    inputmode="numeric" style="margin-bottom: 0;">
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="font-size: 12px; color: #666;">Rol</label>
+                                <select id="newUserRole" class="input-field" style="margin-bottom: 0;">
+                                    <option value="AUXILIAR">Auxiliar</option>
+                                    <option value="ADMIN">Admin</option>
+                                </select>
+                            </div>
+                            <button onclick="createUser()" class="btn-primary"
+                                style="flex: 0 0 auto; width: auto; height: 42px; display: flex; align-items: center; justify-content: center;">
+                                ➕ Agregar
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                <div class="card">
+                    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0;">Directorio de
+                        Personal</h3>
+                    <div class="table-responsive">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead style="background: #f8f9fa;">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">
+                                        Nombre</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Rol
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">PIN
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">
+                                        Último Acceso</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">
+                                        Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersListBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Devices Management Section -->
+            <div class="card" style="margin-top: 20px; border-top: 4px solid #FF9800;">
+                <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                    📱 Dispositivos Autorizados
+                    <span id="devicesCount"
+                        style="background: #FFF3E0; color: #E65100; padding: 2px 8px; border-radius: 12px; font-size: 14px;">0</span>
+                </h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                    Estos dispositivos tienen permiso para usar la aplicación. Si eliminas uno, perderá el acceso
+                    inmediatamente.
+                </p>
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="background: #FFF3E0; color: #E65100;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left;">Dispositivo / Info</th>
+                                <th style="padding: 10px; text-align: left;">Autorizado</th>
+                                <th style="padding: 10px; text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesListBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <footer
-            style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
-            &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 9 (Final)</span>
-        </footer>
+    </div>
+    <footer
+        style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
+        &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
+        <br><span style="font-size: 10px; opacity: 0.8;"> Versión 9 (Final)</span>
+    </footer>
     </div>
 
     <!-- Toast Notification -->

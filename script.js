@@ -95,9 +95,12 @@ function openTab(tabName) {
         loadReports();
     }
 
-    if (tabName === 'users') {
+    if (tabName === 'report2') {
         loadUsers();
+        loadDevices(); // Load devices too
     }
+
+    // Roles tab removed logic
 }
 
 // --- DIAGNOSTIC TOOL ---
@@ -956,7 +959,7 @@ async function ensureDefaultAdmin() {
 
 function loginSuccess(name, role) {
     document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('app-container').style.display = 'block';
+    document.getElementById('app-container').style.display = 'flex';
 
     // Display Name & Role
     document.getElementById('userRoleDisplay').innerText = `${name} (${role})`;
@@ -964,13 +967,9 @@ function loginSuccess(name, role) {
     document.getElementById('loginError').style.display = 'none';
 
     // Show/Hide Elements based on Role
-    const deleteBtn = document.querySelector('button[onclick="clearHistory()"]');
-    const generatorTabBtn = document.getElementById('tab-generator');
-    const usersTabBtn = document.getElementById('tab-users');
-
+    // REPORTE 2 has no special logic now, it is open for all or handled same as others
     if (role === 'ADMIN') {
         if (generatorTabBtn) generatorTabBtn.style.display = 'inline-block';
-        if (usersTabBtn) usersTabBtn.style.display = 'inline-block';
         if (deleteBtn) deleteBtn.style.display = 'block';
 
         // Default to Generator or Users? Generator is fine.
@@ -978,7 +977,6 @@ function loginSuccess(name, role) {
     } else {
         // AUXILIAR
         if (generatorTabBtn) generatorTabBtn.style.display = 'none';
-        if (usersTabBtn) usersTabBtn.style.display = 'none';
         if (deleteBtn) deleteBtn.style.display = 'none';
 
         openTab('scanner'); // Force scanner
@@ -1304,25 +1302,89 @@ function logout() {
 }
 
 
-// --- DEVICE SECURITY ---
+// --- CLOUD DEVICE SECURITY ---
 let logoClicks = 0;
-const MASTER_KEY = "DIRECTOR-MASTER"; // Clave del Director
+const MASTER_KEY = "DIR-ADM";
+let myDeviceId = localStorage.getItem('DEVICE_ID');
 
-function checkDeviceAuth() {
-    return localStorage.getItem('DEVICE_AUTHORIZED') === 'true';
+if (!myDeviceId) {
+    myDeviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    localStorage.setItem('DEVICE_ID', myDeviceId);
 }
 
-function handleLogoClick() {
+function getDeviceInfo() {
+    const ua = navigator.userAgent;
+    let browser = "Desconocido";
+    if (ua.indexOf("Chrome") > -1) browser = "Chrome";
+    else if (ua.indexOf("Safari") > -1) browser = "Safari";
+    else if (ua.indexOf("Firefox") > -1) browser = "Firefox";
+    else if (ua.indexOf("Edge") > -1) browser = "Edge";
+
+    let os = "Desconocido";
+    if (ua.indexOf("Win") > -1) os = "Windows";
+    else if (ua.indexOf("Mac") > -1) os = "MacOS";
+    else if (ua.indexOf("Linux") > -1) os = "Linux";
+    else if (ua.indexOf("Android") > -1) os = "Android";
+    else if (ua.indexOf("iPhone") > -1) os = "iOS";
+
+    return `${browser} en ${os}`;
+}
+
+async function checkDeviceAuth() {
+    // 1. First check local quick flag
+    const localAuth = localStorage.getItem('DEVICE_AUTHORIZED') === 'true';
+    if (!localAuth) return false;
+
+    // 2. Double check with Cloud (Is it still active?)
+    // This runs in background to prevent blocking UI, but if revoked, will logout next time or now.
+    try {
+        if (db) {
+            const doc = await db.collection('devices').doc(myDeviceId).get();
+            if (!doc.exists) {
+                console.warn("Device revoked from cloud!");
+                logoutAndDeauthorize();
+                return false;
+            }
+        }
+    } catch (e) {
+        console.warn("Offline or auth check error", e);
+        // If offline, trust local auth for now
+    }
+    return true;
+}
+
+function logoutAndDeauthorize() {
+    localStorage.removeItem('DEVICE_AUTHORIZED');
+    updateAuthDisplay();
+    // Force reload to show lock screen
+    window.location.reload();
+}
+
+async function handleLogoClick() {
     logoClicks++;
     if (logoClicks === 5) {
         logoClicks = 0;
-        const input = prompt("🔐 MODO DIRECTOR\n\nIngrese Clave Maestra para autorizar este dispositivo:");
+        const input = prompt("🔐 MODO DIRECTOR\n\nIngrese Clave Maestra para autorizar este dispositivo en la NUBE:");
         if (input === MASTER_KEY) {
-            localStorage.setItem('DEVICE_AUTHORIZED', 'true');
-            alert("✅ ¡Dispositivo Autorizado Exitosamente!");
-            updateAuthDisplay();
+            try {
+                // Register in Cloud
+                const info = getDeviceInfo();
+                await db.collection('devices').doc(myDeviceId).set({
+                    name: info,
+                    authorizedAt: new Date().toISOString(),
+                    lastActive: new Date().toISOString(),
+                    userAgent: navigator.userAgent
+                });
+
+                localStorage.setItem('DEVICE_AUTHORIZED', 'true');
+                alert("✅ ¡Dispositivo Autorizado y Registrado en la Nube!");
+                updateAuthDisplay();
+            } catch (e) {
+                console.error(e);
+                alert("Error registrando dispositivo: " + e.message);
+            }
         } else if (input !== null) {
-            alert("❌ Calve Incorrecta");
+            alert("❌ Clave Incorrecta");
         }
     }
 }
@@ -1330,13 +1392,83 @@ function handleLogoClick() {
 function updateAuthDisplay() {
     const statusEl = document.getElementById('authStatus');
     if (statusEl) {
-        if (checkDeviceAuth()) {
+        // Just sync visual state with local storage for speed
+        const isAuth = localStorage.getItem('DEVICE_AUTHORIZED') === 'true';
+        if (isAuth) {
             statusEl.innerText = "🔒 Dispositivo Verificado y Seguro";
-            statusEl.style.color = "#4CAF50"; // Green
+            statusEl.style.color = "#4CAF50";
+            // Trigger background verification
+            if (db) checkDeviceAuth();
         } else {
             statusEl.innerText = "🚫 Dispositivo NO Autorizado";
-            statusEl.style.color = "#E57373"; // Red
+            statusEl.style.color = "#E57373";
         }
+    }
+}
+
+// --- DEVICES MANAGEMENT LIST ---
+let unsubscribeDevices = null;
+
+function loadDevices() {
+    if (currentUserRole !== 'ADMIN') return;
+    if (unsubscribeDevices) return; // Already listening
+
+    const tbody = document.getElementById('devicesListBody');
+    const countEl = document.getElementById('devicesCount');
+
+    unsubscribeDevices = db.collection('devices').orderBy('authorizedAt', 'desc').onSnapshot(snapshot => {
+        tbody.innerHTML = "";
+        countEl.innerText = snapshot.size;
+
+        if (snapshot.empty) {
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center'>No hay dispositivos registrados</td></tr>";
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const isThisDevice = (doc.id === myDeviceId);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <strong>${d.name || 'Dispositivo'}</strong>
+                    ${isThisDevice ? '<span style="color:#4CAF50; font-weight:bold; font-size:10px;">(Este)</span>' : ''}
+                    <div style="font-size:10px; color:#999;">ID: ${doc.id.substr(0, 8)}...</div>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 12px;">
+                    ${formatDateFriendly(d.authorizedAt)}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                    <button onclick="revokeDevice('${doc.id}', '${d.name}')" 
+                        class="btn-danger" style="padding: 4px 8px; font-size: 11px;">
+                        🗑 Desvincular
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }, error => {
+        console.error("Error loading devices:", error);
+        tbody.innerHTML = `<tr><td colspan='3' style='color:red; text-align:center'>Error: ${error.message}</td></tr>`;
+    });
+}
+
+async function revokeDevice(docId, devName) {
+    if (!confirm(`¿Revocar acceso al dispositivo "${devName}"?\n\nSi es este dispositivo, se cerrará la sesión inmediatamente.`)) {
+        return;
+    }
+
+    try {
+        await db.collection('devices').doc(docId).delete();
+        showToast("Dispositivo desvinculado", "info");
+        // If it was me, the onSnapshot or checkDeviceAuth will catch it eventually, 
+        // but let's be immediate if it's self.
+        if (docId === myDeviceId) {
+            logoutAndDeauthorize();
+        }
+    } catch (e) {
+        alert("Error: " + e.message);
     }
 }
 
@@ -1464,7 +1596,10 @@ async function generateFilteredReport(autoPrint = false) {
 // Deprecated old loadReports, pointing to new one
 async function loadReports() {
     generateFilteredReport(false);
+    generateFilteredReport(false);
 }
+
+
 
 // Global Error Handler
 window.onerror = function (msg, url, line) {
