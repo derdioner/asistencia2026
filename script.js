@@ -945,12 +945,12 @@ async function ensureDefaultAdmin() {
             console.log("⚠️ No users found. Seeding Default Admin...");
             await db.collection('app_users').add({
                 name: "Administrador Principal",
-                pin: "1234",
+                pin: "339710",
                 role: "ADMIN",
                 lastLogin: new Date().toISOString(),
                 isDefault: true // Marker to prevent deletion if we want to be strict
             });
-            console.log("✅ Default Admin Created (PIN 1234)");
+            console.log("✅ Default Admin Created (PIN 339710)");
         }
     } catch (e) {
         console.warn("Could not check/seed default admin:", e);
