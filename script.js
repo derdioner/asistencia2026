@@ -624,8 +624,8 @@ async function clearHistory() {
 
     const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN para REINICIAR el sistema:");
 
-    if (password === "GH2026") {
-        const choice = prompt("¿Qué desea borrar?\n\nEscribe 1 para: Solo Historial de Asistencia\nEscribe 2 para: REINICIO TOTAL (Asistencia + Alumnos/QRs)");
+    if (password === "GH2026.") {
+        const choice = prompt("¿Qué desea borrar?\n\n1 = Solo Historial de Asistencia\n2 = REINICIO TOTAL DE FÁBRICA\n3 = SOLO Borrar Usuarios/Roles (Resetear Personal)");
 
         if (choice === "1") {
             if (confirm("¿Confirmar eliminación del HISTORIAL DE ASISTENCIA?")) {
@@ -634,15 +634,23 @@ async function clearHistory() {
                 renderHistory();
             }
         } else if (choice === "2") {
-            const confirmTotal = prompt("🔴 ¡ADVERTENCIA FINAL! 🔴\n\nEsto borrará TODOS los alumnos generados y TODAS las asistencias.\n\nEscribe 'CONFIRMAR' para proceder:");
+            const confirmTotal = prompt("🔴 ¡ADVERTENCIA FINAL! 🔴\n\nEsto borrará TODOS los alumnos, asistencias y usuarios.\n\nEscribe 'CONFIRMAR' para proceder:");
             if (confirmTotal === "CONFIRMAR") {
                 showToast("Iniciando borrado total...", "info");
                 await deleteCollection('attendance');
                 await deleteCollection('students');
+                await deleteCollection('app_users'); // Include users
                 alert("✅ SISTEMA REINICIADO DE FÁBRICA.\nSe han borrado todos los datos.");
-                location.reload(); // Refresh to clear local state
+                location.reload();
             } else {
                 alert("Operación cancelada.");
+            }
+        } else if (choice === "3") {
+            if (confirm("⚠️ ¿Borrar TODOS los usuarios y roles creados?\n\nEl sistema se reiniciará y volverá a crear solo el Usuario Admin por defecto.")) {
+                showToast("Borrando usuarios...", "info");
+                await deleteCollection('app_users');
+                alert("✅ Usuarios eliminados. El sistema se recargará.");
+                location.reload();
             }
         } else {
             alert("Opción no válida.");
