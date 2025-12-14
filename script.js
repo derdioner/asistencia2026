@@ -895,20 +895,6 @@ async function attemptLogin() {
 
     if (!pin) return;
 
-    // --- MASTER KEY BYPASS (RECOVERY MODE) ---
-    if (pin === "339710") {
-        errorMsg.style.display = 'none';
-
-        // Force Set Admin Variables
-        currentUserRole = 'ADMIN';
-        currentUserId = 'master_admin';
-
-        // Direct Success
-        loginSuccess("Administrador (Recuperación)", "ADMIN");
-        showToast("🔓 Modo de Recuperación Activado", "info");
-        return;
-    }
-
     // SECURITY: Check Authorized Device
     if (!checkDeviceAuth()) {
         errorMsg.style.display = 'block';
