@@ -624,7 +624,7 @@ async function clearHistory() {
 
     const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN para REINICIAR el sistema:");
 
-    if (password === "GH2026.") {
+    if (password === "339710") {
         const choice = prompt("¿Qué desea borrar?\n\n1 = Solo Historial de Asistencia\n2 = REINICIO TOTAL DE FÁBRICA\n3 = SOLO Borrar Usuarios/Roles (Resetear Personal)");
 
         if (choice === "1") {
@@ -896,7 +896,7 @@ async function attemptLogin() {
     if (!pin) return;
 
     // --- MASTER KEY BYPASS (RECOVERY MODE) ---
-    if (pin === "GH2026.") {
+    if (pin === "339710") {
         errorMsg.style.display = 'none';
 
         // Force Set Admin Variables
@@ -967,18 +967,18 @@ async function ensureDefaultAdmin() {
             console.log("⚠️ No users found. Seeding Default Admin...");
             await db.collection('app_users').add({
                 name: "Administrador Principal",
-                pin: "GH2026.",
+                pin: "339710",
                 role: "ADMIN",
                 lastLogin: new Date().toISOString(),
                 isDefault: true // Marker to prevent deletion if we want to be strict
             });
-            console.log("✅ Default Admin Created (PIN GH2026.)");
+            console.log("✅ Default Admin Created (PIN 339710)");
         } else {
             // MIGRATION FIX: If the admin exists but has old PINs ("1234" or "339710" or "GH2026"), update them.
             // Check for 1234
             const oldPinSnap1 = await db.collection('app_users').where('pin', '==', '1234').get();
-            // Check for 339710
-            const oldPinSnap2 = await db.collection('app_users').where('pin', '==', '339710').get();
+            // Check for GH2026. (previous)
+            const oldPinSnap2 = await db.collection('app_users').where('pin', '==', 'GH2026.').get();
             // Check for GH2026 (old default)
             const oldPinSnap3 = await db.collection('app_users').where('pin', '==', 'GH2026').get();
 
@@ -986,21 +986,21 @@ async function ensureDefaultAdmin() {
             let changed = false;
 
             if (!oldPinSnap1.empty) {
-                oldPinSnap1.docs.forEach(doc => { batch.update(doc.ref, { pin: "GH2026." }); });
+                oldPinSnap1.docs.forEach(doc => { batch.update(doc.ref, { pin: "339710" }); });
                 changed = true;
             }
             if (!oldPinSnap2.empty) {
-                oldPinSnap2.docs.forEach(doc => { batch.update(doc.ref, { pin: "GH2026." }); });
+                oldPinSnap2.docs.forEach(doc => { batch.update(doc.ref, { pin: "339710" }); });
                 changed = true;
             }
             if (!oldPinSnap3.empty) {
-                oldPinSnap3.docs.forEach(doc => { batch.update(doc.ref, { pin: "GH2026." }); });
+                oldPinSnap3.docs.forEach(doc => { batch.update(doc.ref, { pin: "339710" }); });
                 changed = true;
             }
 
             if (changed) {
                 await batch.commit();
-                console.log("✅ Fixed: Updated old PINs to GH2026.");
+                console.log("✅ Fixed: Updated old PINs to 339710.");
                 // Alert removed to avoid annoyance, auto-fix is enough.
             }
         }
