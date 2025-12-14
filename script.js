@@ -951,6 +951,19 @@ async function ensureDefaultAdmin() {
                 isDefault: true // Marker to prevent deletion if we want to be strict
             });
             console.log("✅ Default Admin Created (PIN 339710)");
+        } else {
+            // MIGRATION FIX: If the admin exists but has the old PIN "1234", update it.
+            const oldPinSnap = await db.collection('app_users').where('pin', '==', '1234').get();
+            if (!oldPinSnap.empty) {
+                console.log("⚠️ Found user with old PIN 1234. Updating to 339710...");
+                const batch = db.batch();
+                oldPinSnap.docs.forEach(doc => {
+                    batch.update(doc.ref, { pin: "339710" });
+                });
+                await batch.commit();
+                console.log("✅ Fixed: Updated old PINs to 339710");
+                alert("📢 SE HA ACTUALIZADO LA CLAVE DE ADMINISTRADOR\n\nLa clave antigua '1234' ha sido cambiada automáticamente a '339710' por seguridad.\n\nPor favor ingrese con la nueva clave.");
+            }
         }
     } catch (e) {
         console.warn("Could not check/seed default admin:", e);
