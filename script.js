@@ -732,28 +732,64 @@ function playBirthdayTune(name) {
     speak(msg);
 }
 
-function exportToExcel() {
-    if (currentAttendanceList.length === 0) {
-        alert("No hay datos cargados para exportar.");
-        return;
+async function exportToExcel() {
+    if (!db) return alert("No hay conexión con la base de datos.");
+
+    const btn = document.querySelector('button[onclick="exportToExcel()"]');
+    const originalText = btn ? btn.innerText : 'Exportar';
+    if (btn) {
+        btn.innerText = "⏳ Descargando...";
+        btn.disabled = true;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Fecha;Hora;Estado;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
+    try {
+        // Fetch ALL history from cloud, not just local view
+        const snapshot = await db.collection('attendance')
+            .orderBy('timestamp', 'desc')
+            .get();
 
-    currentAttendanceList.forEach(row => {
-        const safeName = `"${row.name}"`;
-        // Fallback calculation for old records
-        let status = row.status;
-        if (!status && row.timestamp) {
-            status = determineLateness(new Date(row.timestamp.seconds * 1000));
+        if (snapshot.empty) {
+            alert("No hay registros de asistencia en la Nube.");
+            if (btn) { btn.innerText = originalText; btn.disabled = false; }
+            return;
         }
-        status = status || 'Tardanza'; // Default safely if no timestamp
 
-        csvContent += `${row.displayDate};${row.displayTime};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone}\n`;
-    });
+        let csvContent = "data:text/csv;charset=utf-8,";
+        // BOM for Excel to read UTF-8 correctly
+        csvContent += "\ufeff";
+        csvContent += "Fecha;Hora;Estado;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
 
-    downloadCSV(csvContent, `asistencia_cloud_${new Date().toISOString().slice(0, 10)}.csv`);
+        snapshot.forEach(doc => {
+            const row = doc.data();
+            const safeName = `"${row.name || ''}"`;
+
+            // Handle Timestamp
+            let dateStr = row.displayDate;
+            let timeStr = row.displayTime;
+
+            // If missing legacy fields, calc from timestamp
+            if (!dateStr && row.timestamp) {
+                const d = new Date(row.timestamp.seconds * 1000);
+                dateStr = d.toLocaleDateString();
+                timeStr = d.toLocaleTimeString();
+            }
+
+            const status = row.status || 'Tardanza';
+
+            csvContent += `${dateStr};${timeStr};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone || ''}\n`;
+        });
+
+        downloadCSV(csvContent, `Asistencia_TOTAL_${new Date().toISOString().slice(0, 10)}.csv`);
+
+    } catch (e) {
+        console.error("Error exportando:", e);
+        alert("Error al descargar: " + e.message);
+    }
+
+    if (btn) {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
 }
 
 function downloadCSV(content, fileName) {
