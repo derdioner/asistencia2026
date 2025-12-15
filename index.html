@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GH ASISTENCIA</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00B4D8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+
+        <!-- SCHOOL NAME AT TOP -->
+
+
+        <div class="card"
+            style="text-align: center; max-width: 400px; width: 90%; padding: 40px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+
+            <h1 class="school-title-login"
+                style="margin-bottom: 20px; font-size: 24px; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">
+                I.E.E. "Genaro Herrera"
+            </h1>
+
+            <img src="logo.png" alt="Logo" style="height: 120px; margin-bottom: 20px; cursor: pointer;"
+                onclick="handleLogoClick()">
+
+            <h2 class="animate-welcome" style="margin-bottom: 10px; color: #333;">¡Bienvenido!</h2>
+
+            <!-- EDUCATIONAL PHRASE -->
+            <p
+                style="margin-bottom: 25px; color: var(--text-light); font-style: italic; font-size: 13px; line-height: 1.5;">
+                "La educación es el arma más poderosa que puedes usar para cambiar el mundo."<br>
+                <span style="font-weight: bold; font-size: 11px;">- Nelson Mandela</span>
+            </p>
+
+            <input type="password" id="loginPin" placeholder="PIN de Acceso" maxlength="20" inputmode="text"
+                style="text-align: center; font-size: 24px; width: 80%; margin: 0 auto 20px auto; border: 2px solid #e0e0e0; border-radius: 50px; padding: 10px;"
+                onkeypress="handleLoginKey(event)">
+
+            <button class="btn-primary" onclick="attemptLogin()"
+                style="border-radius: 50px; font-weight: bold; background: linear-gradient(45deg, #00B4D8, #0077B6); box-shadow: 0 4px 15px rgba(0, 180, 216, 0.4);">
+                INGRESAR
+            </button>
+            <p id="loginError" style="color: var(--danger); margin-top: 15px; display: none;"></p>
+        </div>
+
+        <p id="authStatus" style="font-size: 10px; color: #ccc; margin-top: 20px;">Dispositivo No Verificado</p>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;"> <!-- Hidden until login -->
+        <header>
+            <img src="logo.png" alt="Logo I.E.E. Genaro Herrera" class="school-logo">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="text-align: left;">
+                    <h1 style="font-size: 20px; margin: 0;">I.E.E. "Genaro Herrera"</h1>
+                    <p style="margin: 0; font-size: 12px;">Usuario: <span id="userRoleDisplay"
+                            style="font-weight: bold; color: var(--primary-color);">...</span></p>
+                </div>
+                <button onclick="logout()"
+                    style="background: #FFEBEE; color: #D32F2F; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px;">Salir</button>
+                <!-- PWA Install Button -->
+                <button id="installBtn" onclick="installApp()"
+                    style="display:none; background: #E3F2FD; color: #1976D2; border: 1px solid #BBDEFB; padding: 5px 10px; border-radius: 5px; font-size: 12px; margin-left: 10px;">
+                    📲 Instalar App
+                </button>
+            </div>
+        </header>
+
+        <nav class="tab-nav" id="mainTabs">
+            <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">📝 Generador</button>
+            <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">📷 Escáner</button>
+            <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">📊 Reportes</button>
+            <button class="tab-btn" onclick="openTab('report2')" id="tab-report2">👥 Usuarios</button>
+            <button class="tab-btn" onclick="openTab('roles')" id="tab-roles" style="display: none;">� Roles</button>
+        </nav>
+
+        <!-- GENERATOR SECTION -->
+        <div id="generator" class="tab-content active">
+            <!-- SEARCH CARD -->
+            <div class="card" style="background: #E8F5E9; border: 1px solid #C8E6C9;">
+                <h3>🔍 Buscar Alumno (Reimprimir)</h3>
+                <div class="row" style="align-items: flex-end;">
+                    <div class="form-group" style="flex: 2;">
+                        <input type="text" id="searchDNI" placeholder="Ingrese DNI (8 dígitos)" maxlength="8"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <button onclick="searchStudent()" class="btn-primary"
+                            style="padding: 12px; background: #2E7D32;">
+                            BUSCAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Generar Pase de Alumno</h2>
+                <div class="form-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="studentName" class="input-field" placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label>DNI</label>
+                    <input type="text" id="studentDNI" class="input-field" placeholder="DNI (8 dígitos)" maxlength="8"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Grado</label>
+                        <select id="studentGrade" class="input-field" style="margin-bottom:0;">
+                            <option value="1">1°</option>
+                            <option value="2">2°</option>
+                            <option value="3">3°</option>
+                            <option value="4">4°</option>
+                            <option value="5">5°</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sección</label>
+                        <select id="studentSection" class="input-field" style="margin-bottom:0;">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="G">G</option>
+                            <option value="H">H</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Teléfono Apoderado</label>
+                        <input type="text" id="parentPhone" class="input-field" style="margin-bottom:0;"
+                            placeholder="999 999 999" maxlength="9"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento</label>
+                        <input type="date" id="studentDOB" class="input-field" style="margin-bottom:0;">
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="generateQR()">Generar QR</button>
+
+                <div id="qrcode-container">
+                    <div id="qrcode"></div>
+                    <p id="qr-text" style="display:none; margin-top:10px; font-size:12px; color: #666;"></p>
+                    <button id="downloadBtn" class="btn-secondary" style="display:none;"
+                        onclick="downloadQR()">Descargar QR</button>
+                </div>
+            </div>
+
+            <!-- LIVE PREVIEW OF DB -->
+            <div class="card">
+                <h3>Últimos Registros</h3>
+                <div class="table-responsive">
+                    <table id="generatedTable">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Grado</th>
+                                <th>Sec</th>
+                            </tr>
+                        </thead>
+                        <tbody id="generatedList">
+                            <!-- Live rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCANNER SECTION -->
+        <div id="scanner" class="tab-content">
+            <div class="card">
+                <h2>Registrar Asistencia</h2>
+                <div id="reader"></div>
+                <p class="status-text">Escanea el código QR del alumno</p>
+
+                <!-- CONFIG TOGGLE -->
+                <div
+                    style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <label for="autoNotify" style="margin:0; color: #0277bd; font-weight: 500; cursor: pointer;">
+                        📱 Notificar al Apoderado (WhatsApp)
+                    </label>
+                    <input type="checkbox" id="autoNotify" style="width: 20px; height: 20px; accent-color: #0277bd;"
+                        checked>
+                </div>
+            </div>
+
+            <div class="card history-card">
+                <div class="history-header">
+                    <h3>Historial de Hoy</h3>
+                </div>
+                <div class="table-responsive">
+                    <table id="attendanceTable" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Alumno</th>
+                                <th>DNI</th>
+                                <th>Grado</th>
+                                <th>Sección</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceList">
+                            <!-- Rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-actions"
+                    style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span id="attendanceCount" style="font-weight: 600; color: var(--primary-color);">Total: 0</span>
+                    <button class="btn-danger" style="width: auto;" onclick="clearHistory()">🗑 Borrar
+                        Historial</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORTS SECTION -->
+        <div id="reports" class="tab-content">
+
+            <!-- FILTERS -->
+            <div class="card no-print" style="margin-bottom: 20px; background: #f5f5f5;">
+                <h3>🔍 Filtros de Reporte</h3>
+                <div class="row" style="gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label>Fecha:</label>
+                        <input type="date" id="filterDate" class="input-field" style="margin-bottom: 0;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Grado:</label>
+                        <select id="filterGrade" class="input-field" style="margin-bottom: 0;">
+                            <option value="todos">Todos</option>
+                            <option value="1">1ro</option>
+                            <option value="2">2do</option>
+                            <option value="3">3ro</option>
+                            <option value="4">4to</option>
+                            <option value="5">5to</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Sección:</label>
+                        <select id="filterSection" class="input-field" style="margin-bottom: 0;">
+                            <option value="todos">Todas</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="G">G</option>
+                            <option value="H">H</option>
+                        </select>
+                    </div>
+                    <button onclick="generateFilteredReport(true)" class="btn-primary"
+                        style="width: auto; padding: 0 15px; height: 42px; background: #546E7A; font-size: 14px;">🖨
+                        Imprimir Reporte</button>
+                </div>
+            </div>
+
+            <!-- SUMMARY CARDS -->
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="card" style="flex: 1; text-align: center; background: #e3f2fd; color: #1565C0;">
+                    <h3>Total Registrados</h3>
+                    <p id="reportRegistered" style="font-size: 32px; font-weight: bold;">0</p>
+                </div>
+                <div class="card"
+                    style="flex: 1; text-align: center; background: #E3F2FD; color: #1565C0; margin-left: 10px;">
+                    <h3>Asistieron Hoy</h3>
+                    <p id="reportTotal" style="font-size: 32px; font-weight: bold;">0</p>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="card" style="flex: 1; text-align: center;">
+                    <h3>Puntuales</h3>
+                    <p id="reportPuntual" style="font-size: 32px; font-weight: bold; color: #2E7D32;">0</p>
+                </div>
+                <div class="card" style="flex: 1; text-align: center; margin-left: 10px;">
+                    <h3>Tardanzas</h3>
+                    <p id="reportTarde" style="font-size: 32px; font-weight: bold; color: #C62828;">0</p>
+                </div>
+            </div>
+
+            <!-- RESULTS TABLE REMOVED PER USER REQUEST -->
+
+            <div class="card no-print">
+                <h3>Estadística Visual</h3>
+                <div style="height: 300px; display: flex; justify-content: center;">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card no-print">
+                <h3>Acciones</h3>
+                <div class="row">
+                    <!-- Print button removed per request -->
+                    <button class="btn-secondary" onclick="exportToExcel()" style="flex: 1;">📥 Exportar Excel
+                        Asistencia</button>
+                </div>
+                <!-- Database Management -->
+                <div class="row" style="margin-top: 15px;">
+                    <button onclick="exportGeneratedDatabase()" class="btn-small"
+                        style="width: 100%; background: #FFF3E0; color: #E65100; border: 1px solid #FFE0B2; padding: 12px;"
+                        title="Descargar Base de Datos de Alumnos Registrados">
+                        📂 Descargar Base de Datos (Alumnos)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- REPORT 2 SECTION -->
+        <div id="report2" class="tab-content">
+            <div class="card">
+                <h3>Gestión de Usuarios</h3>
+
+                <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div class="card"
+                        style="flex: 1; min-width: 200px; background: #E3F2FD; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+                        <h3 style="margin: 0; color: #1565C0;">Total Usuarios</h3>
+                        <p id="usersCount" style="font-size: 40px; font-weight: bold; color: #0D47A1; margin: 10px 0;">0
+                        </p>
+                    </div>
+
+                    <div class="card" style="flex: 2; min-width: 300px;">
+                        <h3 style="margin-top: 0;">Agregar Nuevo Personal</h3>
+                        <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                            <div style="flex: 2; min-width: 150px;">
+                                <label style="font-size: 12px; color: #666;">Nombre Completo</label>
+                                <input type="text" id="newUserName" class="input-field" placeholder="Ej. Auxiliar Sala"
+                                    style="margin-bottom: 0;">
+                            </div>
+                            <div style="flex: 1; min-width: 100px;">
+                                <label style="font-size: 12px; color: #666;">PIN (4-6)</label>
+                                <input type="text" id="newUserPin" class="input-field" placeholder="5678" maxlength="6"
+                                    inputmode="numeric" style="margin-bottom: 0;">
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="font-size: 12px; color: #666;">Rol</label>
+                                <select id="newUserRole" class="input-field" style="margin-bottom: 0;">
+                                    <option value="AUXILIAR">Auxiliar</option>
+                                    <option value="SIAGIE">SIAGIE</option>
+                                    <option value="ADMIN">Admin</option>
+                                </select>
+                            </div>
+                            <button onclick="createUser()" class="btn-primary"
+                                style="flex: 0 0 auto; width: auto; height: 42px; display: flex; align-items: center; justify-content: center;">
+                                ➕ Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0;">Directorio de
+                        Personal</h3>
+                    <div class="table-responsive">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead style="background: #f8f9fa;">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">
+                                        Nombre</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Rol
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">PIN
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">
+                                        Último Acceso</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">
+                                        Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersListBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Devices Management Section -->
+            <div class="card" style="margin-top: 20px; border-top: 4px solid #FF9800;">
+                <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                    📱 Dispositivos Autorizados
+                    <span id="devicesCount"
+                        style="background: #FFF3E0; color: #E65100; padding: 2px 8px; border-radius: 12px; font-size: 14px;">0</span>
+                </h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                    Estos dispositivos tienen permiso para usar la aplicación. Si eliminas uno, perderá el acceso
+                    inmediatamente.
+                </p>
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="background: #FFF3E0; color: #E65100;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left;">Dispositivo / Info</th>
+                                <th style="padding: 10px; text-align: left;">Autorizado</th>
+                                <th style="padding: 10px; text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesListBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer
+        style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
+        &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
+        <br><span style="font-size: 10px; opacity: 0.8;"> Versión 9 (Final)</span>
+    </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">Mensaje de notificación</div>
+
+    <!-- ON SCREEN CONSOLE FOR DEBUGGING -->
+    <div
+        style="display:none; background: #333; color: #0f0; padding: 10px; margin-top: 20px; font-family: monospace; font-size: 10px; max-height: 200px; overflow-y: scroll; border-radius: 8px;">
+        <strong>SISTEMA DE DIAGNÓSTICO:</strong>
+        <div id="debug-log">Iniciando...</div>
+    </div>
+
+    <!-- PRINTABLE REPORT (Hidden on Screen) -->
+    <div id="printableReport" class="printable-only" style="display: none;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="logo.png" style="height: 60px;">
+            <h2>Reporte de Asistencia</h2>
+            <h4 id="printFilterSummary"></h4>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: sans-serif;">
+            <thead>
+                <tr style="background: #eee;">
+                    <th style="border: 1px solid #000; padding: 5px;">#</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Hora</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Alumno</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Grado/Sec</th>
+                    <th style="border: 1px solid #000; padding: 5px;">Estado</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBody"></tbody>
+        </table>
+        <div style="margin-top: 30px; text-align: right; font-size: 10px; color: #666;">
+            Generado por Sistema de Asistencia QR
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

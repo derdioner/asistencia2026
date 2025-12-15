@@ -1,0 +1,308 @@
+:root {
+    --primary-color: #00B4D8;
+    /* Celeste Vibrante */
+    --secondary-color: #90E0EF;
+    --background-color: #CAF0F8;
+    /* Celeste muy suave para fondo */
+    --card-bg: #ffffff;
+    --text-color: #03045E;
+    /* Azul oscuro para texto */
+    --danger: #FF6B6B;
+    --success: #4ECDC4;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.tab-nav {
+    display: flex;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
+}
+
+.tab-btn {
+    padding: 15px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.tab-content.active {
+    display: block;
+    flex: 1;
+    /* Causes the content to grow and push footer down */
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: none;
+}
+
+.scanner-container {
+    padding: 20px;
+    text-align: center;
+}
+
+#reader {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.row {
+    display: flex;
+    gap: 15px;
+    /* Adds nice spacing between columns */
+    align-items: flex-end;
+    /* Aligns buttons with inputs nicely */
+}
+
+.form-group {
+    flex: 1;
+    /* Ensures they take equal space in a row */
+    margin-bottom: 15px;
+}
+
+
+/* Toast Notification */
+#toast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 100;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 17px;
+}
+
+#toast.show {
+    visibility: visible;
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+/* Toast Types */
+#toast.success {
+    background-color: var(--success);
+}
+
+#toast.error {
+    background-color: var(--danger);
+}
+
+#toast.info {
+    background-color: #0288D1;
+}
+
+.school-logo {
+    height: 60px;
+    margin-right: 15px;
+}
+
+header {
+    background: #fff;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* FIX: Sticky Footer & Full Height */
+.app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+footer {
+    margin-top: auto;
+    /* Pushes footer to bottom */
+}
+
+@keyframes fadein {
+    from {
+        bottom: 0;
+        opacity: 0;
+    }
+
+    to {
+        bottom: 30px;
+        opacity: 1;
+    }
+}
+
+@keyframes fadeout {
+    from {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    to {
+        bottom: 0;
+        opacity: 0;
+    }
+}
+
+/* WELCOME ANIMATION */
+.animate-welcome {
+    animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) both;
+}
+
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* PRINT STYLES */
+/* History Table Styling */
+/* History Table Styling (Shared) */
+#attendanceTable,
+#generatedTable {
+    width: 100%;
+    border-collapse: collapse;
+    /* Ensure clean shared borders */
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+#attendanceTable th,
+#attendanceTable td,
+#generatedTable th,
+#generatedTable td {
+    border: 1px solid #bbb;
+    /* The "Squares" look */
+    padding: 12px;
+    /* Cells */
+    text-align: left;
+}
+
+#attendanceTable th,
+#generatedTable th {
+    background-color: #f0f0f0;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #aaa;
+}
+
+#attendanceTable tbody tr:nth-child(even),
+#generatedTable tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#attendanceTable tbody tr:hover,
+#generatedTable tbody tr:hover {
+    background-color: #e3f2fd;
+}
+
+/* PRINT STYLES */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #printableReport,
+    #printableReport * {
+        visibility: visible;
+    }
+
+    #printableReport {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    /* Hide everything else explicitly if needed, but 'body * visibility: hidden' helps */
+    #app-container,
+    .no-print,
+    #login-overlay {
+        display: none !important;
+    }
+}

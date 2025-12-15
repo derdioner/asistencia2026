@@ -1,0 +1,17 @@
+# System files
+thumbs.db
+desktop.ini
+*.log
+.DS_Store
+
+# Node modules
+node_modules/
+
+# IDEs
+.vscode/
+.idea/
+
+# Firebase
+.firebase/
+# Explicitly allow .firebaserc even if ignored by global rules
+!/.firebaserc
