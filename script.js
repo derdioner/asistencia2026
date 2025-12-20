@@ -100,6 +100,10 @@ function openTab(tabName) {
         loadDevices(); // Load devices too
     }
 
+    if (tabName === 'incidents') {
+        loadActiveIncidents();
+    }
+
     // Roles tab removed logic
 }
 
@@ -476,6 +480,24 @@ async function onScanSuccess(decodedText, decodedResult) {
         processedScans.set(data.id, now);
 
         // --- 2. LOGIC CHECKS ---
+        // Incident Check
+        let incidentMsg = "";
+        let incidentData = null;
+        try {
+            const incidentSnap = await db.collection('incidents')
+                .where('studentDni', '==', data.id)
+                .where('status', '==', 'active')
+                .get();
+
+            if (!incidentSnap.empty) {
+                // Get the most recent one (or all?)
+                incidentData = incidentSnap.docs[0].data();
+                incidentMsg = `\n\n*🚩 INCIDENCIA DETECTADA:* ${incidentData.type}\n*Comentario:* ${incidentData.description}`;
+            }
+        } catch (e) {
+            console.warn("Incident check failed", e);
+        }
+
         // Check if recently scanned in LOCAL cache (via Snapshot) to avoid hitting DB
         const lastScan = currentAttendanceList.find(r => r.dni === data.id);
         if (lastScan && lastScan.displayDate === todayDate) {
@@ -517,6 +539,11 @@ async function onScanSuccess(decodedText, decodedResult) {
         if (isBirthday) {
             playBirthdayTune(data.n); // Special Melody + Greeting
             showToast(`🎂🎉 ¡FELIZ CUMPLEAÑOS ${data.n}! 🎉🎂`, 'info'); // Using info style for blue/different color
+        } else if (incidentData) {
+            // INCIDENT FEEDBACK
+            playAlertSound(); // Needs to be defined or reuse existing with alert tone
+            showToast(`⚠️ ALERTA: ${data.n} tiene una INCIDENCIA activa`, 'error');
+            speak(`Atención: el estudiante ${data.n} tiene una incidencia registrada.`);
         } else {
             // Standard Feedback (Sound + Voice)
             playSuccessSound();
@@ -537,7 +564,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                 if (hour >= 12) greeting = "Buenas tardes";
                 if (hour >= 18) greeting = "Buenas noches";
 
-                const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.`;
+                const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayStr} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
                 const encodedMsg = encodeURIComponent(message);
 
                 // Use wa.me for universal link (opens App on mobile, Web on desktop)
@@ -1073,8 +1100,10 @@ function loginSuccess(name, role) {
     } else {
         // AUXILIAR (Default)
         // Show Scanner & Reports. Hide Generator & Users.
+        const tabIncidents = document.getElementById('tab-incidents');
         if (tabGenerator) tabGenerator.style.display = 'none';
         if (tabUsers) tabUsers.style.display = 'none';
+        if (tabIncidents) tabIncidents.style.display = 'none';
         if (deleteBtn) deleteBtn.style.display = 'none';
 
         openTab('scanner'); // Force scanner
@@ -1731,8 +1760,157 @@ async function loadReports() {
 
 
 
+// --- INCIDENT MANAGEMENT LOGIC ---
+let selectedIncidentStudent = null;
+
+async function searchStudentForIncident() {
+    const dni = document.getElementById('incidentDNI').value.trim();
+    if (dni.length !== 8) return alert("Ingrese un DNI de 8 dígitos");
+
+    try {
+        const snap = await db.collection('students').where('id', '==', dni).get();
+        if (snap.empty) {
+            alert("Alumno no encontrado");
+            selectedIncidentStudent = null;
+            document.getElementById('incidentStudentInfo').style.display = 'none';
+            return;
+        }
+
+        const data = snap.docs[0].data();
+        selectedIncidentStudent = {
+            dni: data.id,
+            name: data.n
+        };
+
+        document.getElementById('incidentStudentName').innerText = data.n;
+        document.getElementById('incidentStudentInfo').style.display = 'block';
+
+    } catch (e) {
+        console.error(e);
+        alert("Error al buscar alumno");
+    }
+}
+
+async function registerIncident() {
+    if (!selectedIncidentStudent) return alert("Primero busque y seleccione un alumno");
+
+    const type = document.getElementById('incidentType').value;
+    const description = document.getElementById('incidentComment').value.trim();
+
+    if (!description) return alert("Por favor ingrese un comentario sobre la incidencia.");
+
+    try {
+        await db.collection('incidents').add({
+            studentDni: selectedIncidentStudent.dni,
+            studentName: selectedIncidentStudent.name,
+            type: type,
+            description: description,
+            date: new Date().toISOString(),
+            status: 'active'
+        });
+
+        showToast("✅ Incidencia registrada correctamente", "success");
+
+        // Reset
+        document.getElementById('incidentComment').value = "";
+        document.getElementById('incidentDNI').value = "";
+        document.getElementById('incidentStudentInfo').style.display = 'none';
+        selectedIncidentStudent = null;
+
+    } catch (e) {
+        console.error(e);
+        alert("Error al registrar incidencia");
+    }
+}
+
+let unsubscribeIncidents = null;
+function loadActiveIncidents() {
+    if (unsubscribeIncidents) return;
+
+    const tbody = document.getElementById('activeIncidentsList');
+    unsubscribeIncidents = db.collection('incidents')
+        .where('status', '==', 'active')
+        .orderBy('date', 'desc')
+        .onSnapshot(snap => {
+            tbody.innerHTML = "";
+            if (snap.empty) {
+                tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:15px;'>No hay incidencias activas</td></tr>";
+                return;
+            }
+
+            snap.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:10px; border-bottom:1px solid #eee;">
+                        <strong>${data.studentName}</strong><br>
+                        <small style="color:#666;">DNI: ${data.studentDni}</small>
+                    </td>
+                    <td style="padding:10px; border-bottom:1px solid #eee;">
+                        <span style="color:#D32F2F; font-weight:bold; font-size:11px;">[${data.type}]</span><br>
+                        ${data.description}
+                    </td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">
+                        <button onclick="resolveIncident('${doc.id}')" class="btn-small" style="background:#E8F5E9; color:#2E7D32; border:1px solid #C8E6C9;">✅ Resolver</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }, e => {
+            console.error(e);
+            if (e.code === 'failed-precondition') {
+                tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:15px; color:orange;'>⚠️ Se requiere crear un índice en Firebase. Revise la consola del navegador.</td></tr>";
+            }
+        });
+}
+
+async function resolveIncident(id) {
+    if (!confirm("¿Marcar esta incidencia como RESUELTA?")) return;
+    try {
+        await db.collection('incidents').doc(id).update({
+            status: 'resolved',
+            resolvedAt: new Date().toISOString()
+        });
+        showToast("Incidencia resuelta", "success");
+    } catch (e) {
+        console.error(e);
+        alert("Error al resolver incidencia");
+    }
+}
+
 // Global Error Handler
 window.onerror = function (msg, url, line) {
     // logToScreen(`ERROR GLOBAL: ${msg} (Línea ${line})`);
     console.error(`Error Script: ${msg}`);
 };
+
+function playAlertSound() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth'; // Rougher sound for alert
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.5);
+
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+    } catch (e) { console.warn(e); }
+}
+
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-PE'; // Peru Spanish
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
+}
