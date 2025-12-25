@@ -390,24 +390,19 @@ async function exportGeneratedDatabase() {
 
         // Start Realtime Listener
         if (db && !unsubscribeListener) {
-            // Listen to today's attendance? Or last 50?
-            // Let's just listen to the last 50 records for performance, or filter by today client-side if dataset is small.
-            // Better: Filter by date string if possible?
-            // For simplicity: Order by timestamp desc limit 100.
             unsubscribeListener = db.collection('attendance')
                 .orderBy('timestamp', 'desc')
-                .limit(200) // Increase limit to ensure we catch all of today even if mixed
+                .limit(200)
                 .onSnapshot((snapshot) => {
                     const todayStr = new Date().toLocaleDateString();
                     currentAttendanceList = [];
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        // STRICT filtering: Only show THIS calendar day
                         if (data.displayDate === todayStr) {
                             currentAttendanceList.push(data);
                         }
                     });
-                    renderHistory(); // Auto-update table
+                    renderHistory();
                 });
         }
 
@@ -424,43 +419,32 @@ async function exportGeneratedDatabase() {
     }
 
     function stopScanner() {
-        // Optional: Stop listener if leaving tab to save bandwidth?
-        // For now we keep it to show updates even in other tab.
     }
 
-    const processedScans = new Map(); // Local debounce cache
+    const processedScans = new Map();
 
     async function onScanSuccess(decodedText, decodedResult) {
         if (!db) return;
 
         try {
             const data = JSON.parse(decodedText);
-            // Basic validation
             if (!data.n || !data.id) throw new Error("QR Inválido");
 
             const now = new Date();
             const todayDate = now.toLocaleDateString();
 
-            // --- 1. SYNCHRONOUS DEBOUNCE (CRITICAL FIX) ---
-            // Prevent processing the same DNI multiple times within 5 seconds locally
-            // This stops the "3 times" bug caused by rapid scanner callbacks before DB updates
             if (processedScans.has(data.id)) {
                 const lastTime = processedScans.get(data.id);
                 if ((now - lastTime) < 5000) {
-                    return; // Ignore duplicate scan within 5s
+                    return;
                 }
             }
-            // Mark as processed immediately
             processedScans.set(data.id, now);
 
-            // --- 2. LOGIC CHECKS ---
-            // Incident Check
             let incidentMsg = "";
             let incidentData = null;
             try {
                 const cleanDni = String(data.id || "").trim();
-
-                // Query only by DNI to avoid Index requirement for composite query (Fixes missing index issue)
                 const incidentSnap = await db.collection('incidents')
                     .where('studentDni', '==', cleanDni)
                     .get();
@@ -479,25 +463,20 @@ async function exportGeneratedDatabase() {
                 console.warn("Incident check failed", e);
             }
 
-            // Check if recently scanned in LOCAL cache (via Snapshot) to avoid hitting DB
             const lastScan = currentAttendanceList.find(r => r.dni === data.id);
             if (lastScan && lastScan.displayDate === todayDate) {
-                // Check time difference (Firestore timestamp)
                 const lastTime = new Date(lastScan.timestamp.seconds * 1000);
-                if ((now - lastTime) < 60000) { // 1 minute duplicate protection
-                    // Silently ignore or show warning if it wasn't caught by the 5s debounce
+                if ((now - lastTime) < 60000) {
                     return;
                 }
             }
 
-            // Check DB for daily duplicate (Standard of Truth)
             const duplicateCheck = await db.collection('attendance')
                 .where('dni', '==', data.id)
                 .where('displayDate', '==', todayDate)
                 .get();
 
             if (!duplicateCheck.empty) {
-                // Check for incidents EVEN ON DUPLICATE so operator is alerted
                 if (incidentData) {
                     playAlertSound();
                     showToast(`⚠️ REPETIDO + ALERTA: ${data.n} tiene una INCIDENCIA`, 'error');
@@ -508,24 +487,21 @@ async function exportGeneratedDatabase() {
                 return;
             }
 
-            // Add to Firestore
             await db.collection('attendance').add({
                 name: data.n,
                 dni: data.id,
                 grade: data.g,
                 section: data.s,
                 phone: data.p,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Server time
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 displayTime: now.toLocaleTimeString(),
                 displayDate: todayDate,
-                status: determineLateness(now) // 'Puntual' or 'Tardanza'
+                status: determineLateness(now)
             });
 
-            // --- BIRTHDAY & INCIDENT FEEDBACK ---
             const isBirthday = checkBirthday(data.dob);
 
             if (incidentData) {
-                // INCIDENT HAS PRIORITY
                 playAlertSound();
                 showToast(`⚠️ ALERTA: ${data.n} tiene una INCIDENCIA activa`, 'error');
                 speak(`Atención: el estudiante ${data.n} tiene una incidencia registrada.`);
@@ -539,20 +515,13 @@ async function exportGeneratedDatabase() {
                 playBirthdayTune(data.n);
                 showToast(`🎂🎉 ¡FELIZ CUMPLEAÑOS ${data.n}! 🎉🎂`, 'info');
             } else {
-                // Standard Feedback
                 playSuccessSound();
                 showToast(`✅ Asistencia: ${data.n}`, 'success');
             }
 
-            // Calculate styling based on status
-            const isLate = (now.getHours() === 7 && now.getMinutes() > 45) || now.getHours() >= 8;
-            // Note: determineLateness logic duplicated briefly for display, let's unify.
-
-            // --- NOTIFICATION LOGIC (Option 1: Semi-Auto) ---
             const notifyCheckbox = document.getElementById('autoNotify');
             if (notifyCheckbox && notifyCheckbox.checked) {
                 if (data.p && data.p.length >= 9) {
-                    // Determine Greeting based on time
                     const hour = now.getHours();
                     let greeting = "Buenos días";
                     if (hour >= 12) greeting = "Buenas tardes";
@@ -560,22 +529,15 @@ async function exportGeneratedDatabase() {
 
                     const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
                     const encodedMsg = encodeURIComponent(message);
-
-                    // Use wa.me for universal link (opens App on mobile, Web on desktop)
-                    // Appending 51 for Peru (User location context implies Peru based on DNI/Logo)
-                    // If phone doesn't have country code, we assume +51.
-                    let phone = data.p.replace(/\D/g, ''); // strip non-digits
+                    let phone = data.p.replace(/\D/g, '');
                     if (phone.length === 9) phone = "51" + phone;
 
                     const waLink = `https://wa.me/${phone}?text=${encodedMsg}`;
-
-                    // Open in new tab (Mobile will try to open App)
                     window.open(waLink, '_blank');
                 } else {
                     showToast("⚠️ Sin número de apoderado para notificar", "info");
                 }
             }
-
         } catch (e) {
             console.error("Error parsing/saving QR", e);
         }
