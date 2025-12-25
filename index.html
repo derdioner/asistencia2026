@@ -496,10 +496,14 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden">Mensaje de notificación</div>
 
-    <div
-        style="background: #333; color: #0f0; padding: 20px; margin-top: 20px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: scroll; border-radius: 8px; border: 2px solid #555;">
-        <strong>SISTEMA DE DIAGNÓSTICO:</strong>
-        <div id="debug-log">Iniciando...</div>
+    <div id="diagnostic-console"
+        style="position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.9); color: #0f0; padding: 15px; font-family: monospace; font-size: 11px; max-height: 150px; overflow-y: scroll; border-top: 2px solid #00B4D8; z-index: 9999; display: block;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <strong>🚀 SISTEMA DE DIAGNÓSTICO GH</strong>
+            <button onclick="this.parentElement.parentElement.style.display='none'"
+                style="background:none; color:#f00; border:1px solid #f00; cursor:pointer; padding: 2px 5px;">Cerrar</button>
+        </div>
+        <div id="debug-log">Iniciando consola...</div>
     </div>
 
     <!-- PRINTABLE REPORT (Hidden on Screen) -->

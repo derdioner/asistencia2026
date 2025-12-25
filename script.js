@@ -484,7 +484,15 @@ async function onScanSuccess(decodedText, decodedResult) {
         let incidentMsg = "";
         let incidentData = null;
         try {
-            logToScreen(`Verificando incidencias para DNI: ${data.id}...`);
+            logToScreen(`Verificando incidencias para DNI: [${data.id}] (Tipo: ${typeof data.id})...`);
+
+            // Log a sample incident DNI to compare types if possible
+            const logSample = await db.collection('incidents').limit(1).get();
+            if (!logSample.empty) {
+                const sample = logSample.docs[0].data();
+                logToScreen(`Muestra DB: DNI [${sample.studentDni}] (Tipo: ${typeof sample.studentDni})`);
+            }
+
             const incidentSnap = await db.collection('incidents')
                 .where('studentDni', '==', data.id)
                 .where('status', '==', 'active')
