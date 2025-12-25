@@ -484,17 +484,21 @@ async function onScanSuccess(decodedText, decodedResult) {
         let incidentMsg = "";
         let incidentData = null;
         try {
+            logToScreen(`Verificando incidencias para DNI: ${data.id}...`);
             const incidentSnap = await db.collection('incidents')
                 .where('studentDni', '==', data.id)
                 .where('status', '==', 'active')
                 .get();
 
             if (!incidentSnap.empty) {
-                // Get the most recent one (or all?)
                 incidentData = incidentSnap.docs[0].data();
+                logToScreen(`✅ INCIDENCIA ENCONTRADA: ${incidentData.type}`);
                 incidentMsg = `\n\n*🚩 INCIDENCIA DETECTADA:* ${incidentData.type}\n*Comentario:* ${incidentData.description}`;
+            } else {
+                logToScreen("ℹ️ No se encontraron incidencias activas.");
             }
         } catch (e) {
+            logToScreen(`❌ Error consultando incidencias: ${e.message}`);
             console.warn("Incident check failed", e);
         }
 
