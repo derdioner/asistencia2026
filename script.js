@@ -137,6 +137,7 @@ async function diagnoseConnection() {
 
 // --- GENERATOR LOGIC ---
 let qrCodeObj = null;
+let lastGeneratedStudent = null; // Track last student for named download
 let unsubscribeStudents = null;
 
 
@@ -351,7 +352,9 @@ function downloadQR() {
     if (qrImg) {
         const link = document.createElement('a');
         link.href = qrImg.src;
-        link.download = `QR_Asistencia.png`;
+        // Use student name if available, otherwise fallback
+        const name = lastGeneratedStudent ? lastGeneratedStudent.n.replace(/\s+/g, '_') : 'Asistencia';
+        link.download = `QR_${name}.png`;
         link.click();
     }
 }
@@ -1256,6 +1259,7 @@ function playBirthdayTune(name) {
 
 // Helper to reuse QR rendering
 function renderQR(data) {
+    lastGeneratedStudent = data; // Store data for named download
     const qrString = JSON.stringify(data);
     const container = document.getElementById('qrcode');
     container.innerHTML = "";
