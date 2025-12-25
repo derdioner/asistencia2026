@@ -3,6 +3,7 @@
         "indexes": "firestore.indexes.json"
     },
     "hosting": {
+        "site": "gh20261",
         "public": ".",
         "ignore": [
             "firebase.json",
