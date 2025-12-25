@@ -627,7 +627,11 @@ function showToast(message, type = 'success') {
 }
 
 function onScanFailure(error) {
-    // console.warn(error);
+    // Silence the extremely noisy "No code found" errors from the library
+    if (error && error.includes("No MultiFormat Readers")) return;
+
+    // Log other potentially useful errors once to avoid flooding
+    console.debug("Scanner noise:", error);
 }
 
 function renderHistory() {
