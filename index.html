@@ -21,6 +21,16 @@
 </head>
 
 <body>
+    <div id="diagnostic-console"
+        style="position: sticky; top: 0; left: 0; width: 100%; background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; max-height: 150px; overflow-y: scroll; border-bottom: 3px solid #00B4D8; z-index: 99999; display: block;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <span>🚀 <strong>GH DIAGNÓSTICO Activo</strong> (Refrescar si no carga)</span>
+            <button onclick="this.parentElement.parentElement.style.display='none'"
+                style="background:#f00; color:#fff; border:none; cursor:pointer; padding: 5px 10px; font-weight:bold;">CERRAR
+                CONSOLA</button>
+        </div>
+        <div id="debug-log">Consola lista. Esperando escaneo...</div>
+    </div>
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
