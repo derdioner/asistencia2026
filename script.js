@@ -1109,9 +1109,11 @@ function loginSuccess(name, role) {
     const tabUsers = document.getElementById('tab-report2'); // Named 'Usuarios' now
 
     // Reset all to visible first, then hide based on role
+    const tabIncidents = document.getElementById('tab-incidents');
     if (tabGenerator) tabGenerator.style.display = 'inline-block';
     if (tabScanner) tabScanner.style.display = 'inline-block';
     if (tabReports) tabReports.style.display = 'inline-block';
+    if (tabIncidents) tabIncidents.style.display = 'inline-block';
     if (tabUsers) tabUsers.style.display = 'inline-block';
     if (deleteBtn) deleteBtn.style.display = 'block';
 
@@ -1131,11 +1133,9 @@ function loginSuccess(name, role) {
 
     } else {
         // AUXILIAR (Default)
-        // Show Scanner & Reports. Hide Generator & Users.
-        const tabIncidents = document.getElementById('tab-incidents');
+        // Show Scanner, Reports & Incidents. Hide Generator & Users.
         if (tabGenerator) tabGenerator.style.display = 'none';
         if (tabUsers) tabUsers.style.display = 'none';
-        if (tabIncidents) tabIncidents.style.display = 'none';
         if (deleteBtn) deleteBtn.style.display = 'none';
 
         openTab('scanner'); // Force scanner
