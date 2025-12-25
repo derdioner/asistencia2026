@@ -484,26 +484,29 @@ async function onScanSuccess(decodedText, decodedResult) {
         let incidentMsg = "";
         let incidentData = null;
         try {
-            logToScreen(`Verificando incidencias para DNI: [${data.id}] (Tipo: ${typeof data.id})...`);
+            const cleanDni = String(data.id || "").trim();
+            logToScreen(`🔎 Buscando incidencia para DNI: [${cleanDni}]...`);
 
-            // Log a sample incident DNI to compare types if possible
-            const logSample = await db.collection('incidents').limit(1).get();
-            if (!logSample.empty) {
-                const sample = logSample.docs[0].data();
-                logToScreen(`Muestra DB: DNI [${sample.studentDni}] (Tipo: ${typeof sample.studentDni})`);
-            }
-
+            // Query only by DNI to avoid Index requirement for composite query (Fixes missing index issue)
             const incidentSnap = await db.collection('incidents')
-                .where('studentDni', '==', data.id)
-                .where('status', '==', 'active')
+                .where('studentDni', '==', cleanDni)
                 .get();
 
             if (!incidentSnap.empty) {
-                incidentData = incidentSnap.docs[0].data();
-                logToScreen(`✅ INCIDENCIA ENCONTRADA: ${incidentData.type}`);
-                incidentMsg = `\n\n*🚩 INCIDENCIA DETECTADA:* ${incidentData.type}\n*Comentario:* ${incidentData.description}`;
+                // Filter by 'active' in Memory (No index needed)
+                const activeIncidents = incidentSnap.docs
+                    .map(doc => doc.data())
+                    .filter(inc => inc.status === 'active');
+
+                if (activeIncidents.length > 0) {
+                    incidentData = activeIncidents[0];
+                    logToScreen(`✅ INCIDENCIA ACTIVA DETECTADA: ${incidentData.type}`);
+                    incidentMsg = `\n\n*🚩 INCIDENCIA DETECTADA:* ${incidentData.type}\n*Comentario:* ${incidentData.description}`;
+                } else {
+                    logToScreen("ℹ️ Alumno tiene incidencias pero todas están RESUELTAS.");
+                }
             } else {
-                logToScreen("ℹ️ No se encontraron incidencias activas.");
+                logToScreen("ℹ️ No hay incidencias en la DB para este DNI.");
             }
         } catch (e) {
             logToScreen(`❌ Error consultando incidencias: ${e.message}`);
