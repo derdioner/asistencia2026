@@ -516,7 +516,14 @@ async function onScanSuccess(decodedText, decodedResult) {
             .get();
 
         if (!duplicateCheck.empty) {
-            showToast(`⚠️ ${data.n} ya registró asistencia hoy`, 'error');
+            // Check for incidents EVEN ON DUPLICATE so operator is alerted
+            if (incidentData) {
+                playAlertSound();
+                showToast(`⚠️ REPETIDO + ALERTA: ${data.n} tiene una INCIDENCIA`, 'error');
+                speak(`Atención: el estudiante ${data.n} ya registró asistencia pero tiene una incidencia.`);
+            } else {
+                showToast(`⚠️ ${data.n} ya registró asistencia hoy`, 'error');
+            }
             return;
         }
 
@@ -533,19 +540,25 @@ async function onScanSuccess(decodedText, decodedResult) {
             status: determineLateness(now) // 'Puntual' or 'Tardanza'
         });
 
-        // --- BIRTHDAY CHECK ---
+        // --- BIRTHDAY & INCIDENT FEEDBACK ---
         const isBirthday = checkBirthday(data.dob);
 
-        if (isBirthday) {
-            playBirthdayTune(data.n); // Special Melody + Greeting
-            showToast(`🎂🎉 ¡FELIZ CUMPLEAÑOS ${data.n}! 🎉🎂`, 'info'); // Using info style for blue/different color
-        } else if (incidentData) {
-            // INCIDENT FEEDBACK
-            playAlertSound(); // Needs to be defined or reuse existing with alert tone
+        if (incidentData) {
+            // INCIDENT HAS PRIORITY
+            playAlertSound();
             showToast(`⚠️ ALERTA: ${data.n} tiene una INCIDENCIA activa`, 'error');
             speak(`Atención: el estudiante ${data.n} tiene una incidencia registrada.`);
+            if (isBirthday) {
+                setTimeout(() => {
+                    showToast(`🎂🎉 ¡Y TAMBIÉN ES SU CUMPLEAÑOS! 🎉🎂`, 'info');
+                    playBirthdayTune(data.n);
+                }, 2000);
+            }
+        } else if (isBirthday) {
+            playBirthdayTune(data.n);
+            showToast(`🎂🎉 ¡FELIZ CUMPLEAÑOS ${data.n}! 🎉🎂`, 'info');
         } else {
-            // Standard Feedback (Sound + Voice)
+            // Standard Feedback
             playSuccessSound();
             showToast(`✅ Asistencia: ${data.n}`, 'success');
         }
@@ -564,7 +577,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                 if (hour >= 12) greeting = "Buenas tardes";
                 if (hour >= 18) greeting = "Buenas noches";
 
-                const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayStr} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
+                const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
                 const encodedMsg = encodeURIComponent(message);
 
                 // Use wa.me for universal link (opens App on mobile, Web on desktop)
