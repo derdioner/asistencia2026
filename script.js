@@ -601,13 +601,14 @@ async function clearHistory() {
                 renderHistory();
             }
         } else if (choice === "2") {
-            const confirmTotal = prompt("🔴 ¡ADVERTENCIA FINAL! 🔴\n\nEsto borrará TODOS los alumnos, asistencias y usuarios.\n\nEscribe 'CONFIRMAR' para proceder:");
+            const confirmTotal = prompt("🔴 ¡ADVERTENCIA FINAL! 🔴\n\nEsto borrará TODOS los alumnos, asistencias, usuarios e INCIDENCIAS.\n\nEscribe 'CONFIRMAR' para proceder:");
             if (confirmTotal === "CONFIRMAR") {
                 showToast("Iniciando borrado total...", "info");
                 await deleteCollection('attendance');
                 await deleteCollection('students');
                 await deleteCollection('app_users'); // Include users
-                alert("✅ SISTEMA REINICIADO DE FÁBRICA.\nSe han borrado todos los datos.");
+                await deleteCollection('incidents'); // Delete incidents
+                alert("✅ SISTEMA REINICIADO DE FÁBRICA.\nSe han borrado todos los datos, incluyendo incidencias.");
                 location.reload();
             } else {
                 alert("Operación cancelada.");
