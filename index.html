@@ -22,14 +22,14 @@
 
 <body>
     <div id="diagnostic-console"
-        style="position: sticky; top: 0; left: 0; width: 100%; background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; max-height: 150px; overflow-y: scroll; border-bottom: 3px solid #00B4D8; z-index: 99999; display: block;">
+        style="position: fixed; top: 0; left: 0; width: 100%; background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 14px; max-height: 200px; overflow-y: scroll; border-bottom: 5px solid #ff00ff; z-index: 999999; display: block; box-shadow: 0 5px 20px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <span>🚀 <strong>GH DIAGNÓSTICO Activo</strong> (Refrescar si no carga)</span>
+            <span>🚀 <strong>SISTEMA DE DIAGNÓSTICO GH</strong> (ACTIVO)</span>
             <button onclick="this.parentElement.parentElement.style.display='none'"
-                style="background:#f00; color:#fff; border:none; cursor:pointer; padding: 5px 10px; font-weight:bold;">CERRAR
+                style="background:#f00; color:#fff; border:none; cursor:pointer; padding: 8px 15px; font-weight:bold; border-radius: 5px;">CERRAR
                 CONSOLA</button>
         </div>
-        <div id="debug-log">Consola lista. Esperando escaneo...</div>
+        <div id="debug-log" style="font-weight: bold;">[CONSOLA INICIADA] Esperando escaneo para diagnosticar...</div>
     </div>
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay"
