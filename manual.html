@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - GH Asistencia QR</title>
+    <style>
+        :root {
+            --primary: #0077B6;
+            --secondary: #00B4D8;
+            --bg: #f4f7f6;
+            --text: #333;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            border-bottom: 3px solid var(--secondary);
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-top: 30px;
+            border-left: 5px solid var(--secondary);
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: #444;
+            margin-top: 20px;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin: 30px 0;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: var(--primary);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #777;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                width: 100%;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="no-print">
+        <button onclick="window.print()">📥 Imprimir o Guardar como PDF</button>
+    </div>
+
+    <div class="container">
+        <h1>📖 Manual de Usuario: GH Asistencia QR</h1>
+        <p style="text-align:center;"><em>I.E.E. "Genaro Herrera" - Contamana</em></p>
+
+        <hr>
+
+        <h2>1. Acceso al Sistema (Login)</h2>
+        <p>Para ingresar, cada miembro del personal debe introducir su <strong>PIN de Acceso</strong>.</p>
+        <ul>
+            <li><strong>ADMIN:</strong> Acceso total, gestión de usuarios, dispositivos e incidencias, y reinicio del
+                sistema.</li>
+            <li><strong>SIAGIE:</strong> Acceso a Generador de Pases y Reportes.</li>
+            <li><strong>AUXILIAR:</strong> Acceso a Escáner, Reportes e Incidencias.</li>
+        </ul>
+
+        <h2>2. 📝 Generador de Pases QR</h2>
+        <p>En esta pestaña se registran los alumnos y se generan sus códigos de identificación.</p>
+        <ul>
+            <li><strong>Buscar Alumno:</strong> Permite recuperar los datos de un alumno ya registrado mediante su DNI
+                para reimprimir su QR.</li>
+            <li><strong>Generar Pase:</strong> Ingrese Nombre, DNI, Grado, Sección, Teléfono del Apoderado y Fecha de
+                Nacimiento.</li>
+            <li><strong>Actualizar Datos:</strong> Si el DNI ya existe, el sistema preguntará si se desea actualizar la
+                información.</li>
+            <li><strong>Descargar QR:</strong> Una vez generado, puede descargar el código como imagen (.png) para
+                imprimirlo.</li>
+        </ul>
+
+        <h2>3. 📷 Escáner de Asistencia</h2>
+        <p>Es el corazón operativo del sistema para el registro diario.</p>
+        <ul>
+            <li><strong>Operación:</strong> Apunte la cámara al código QR del alumno.</li>
+            <li><strong>Notificación por WhatsApp:</strong> Si la casilla "Notificar al Apoderado" está activa, al
+                escanear se abrirá automáticamente un enlace de WhatsApp con un mensaje preconfigurado.</li>
+            <li><strong>Alertas de Voz:</strong> El sistema anunciará por voz el nombre del alumno, si tiene incidencias
+                o si es su cumpleaños.</li>
+            <li><strong>Estados:</strong> Puntual (6:00 AM - 7:45 AM) o Tardanza (fuera de ese horario).</li>
+        </ul>
+
+        <h2>4. ⚠️ Sistema de Incidencias</h2>
+        <p>Permite marcar a estudiantes que tengan alertas especiales (disciplina, convivencia, etc.).</p>
+        <ul>
+            <li><strong>Registrar:</strong> Busque al alumno por DNI, seleccione una categoría y detalle el comentario.
+            </li>
+            <li><strong>Impacto:</strong> Cuando un alumno con incidencia es escaneado, el sistema emite una
+                <strong>alarma audible</strong> y muestra un aviso visual en rojo.</li>
+        </ul>
+
+        <h2>5. 📊 Reportes y Estadísticas</h2>
+        <p>Visualice el estado general de la institución en tiempo real.</p>
+        <ul>
+            <li><strong>Filtros:</strong> Filtre por Fecha, Grado y Sección.</li>
+            <li><strong>Exportación:</strong> Descargue el historial completo de asistencia en formato
+                <strong>CSV/Excel</strong> o la base de datos de los alumnos.</li>
+        </ul>
+
+        <h2>6. 👥 Usuarios y Gestión (ADMIN)</h2>
+        <ul>
+            <li><strong>Gestión de Personal:</strong> Agregar nuevos auxiliares con sus propios pines y roles.</li>
+            <li><strong>Dispositivos Autorizados:</strong> Control de qué teléfonos tienen acceso.</li>
+            <li><strong>Zona de Peligro:</strong> Reinicio de sistema para el inicio de nuevo año escolar.</li>
+        </ul>
+
+        <hr>
+        <div class="footer">
+            &copy; 2026 - I.E.E. Genaro Herrera - Sistema de Asistencia QR
+        </div>
+    </div>
+</body>
+
+</html>
