@@ -770,7 +770,7 @@ async function exportToExcel() {
         let csvContent = "data:text/csv;charset=utf-8,";
         // BOM for Excel to read UTF-8 correctly
         csvContent += "\ufeff";
-        csvContent += "Fecha;Hora;Estado;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
+        csvContent += "Fecha;Hora;Tipo;Estado;Nombre;DNI;Grado;Seccion;Telefono Apoderado\n";
 
         snapshot.forEach(doc => {
             const row = doc.data();
@@ -788,8 +788,9 @@ async function exportToExcel() {
             }
 
             const status = row.status || 'Tardanza';
+            const type = (row.type === 'salida') ? 'Salida' : 'Ingreso';
 
-            csvContent += `${dateStr};${timeStr};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone || ''}\n`;
+            csvContent += `${dateStr};${timeStr};${type};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone || ''}\n`;
         });
 
         downloadCSV(csvContent, `Asistencia_TOTAL_${new Date().toISOString().slice(0, 10)}.csv`);
@@ -1688,9 +1689,11 @@ async function generateFilteredReport(autoPrint = false) {
     filteredList.forEach((row, index) => {
         const tr = document.createElement('tr');
         const color = row._calcStatus === 'Tardanza' ? 'color:#D32F2F' : 'color:#000'; // Make late red even in print? (Usually b/w, but greyscale works)
+        const typeText = (row.type === 'salida') ? 'Salida' : 'Ingreso';
         tr.innerHTML = `
             <td style="border: 1px solid #000; padding: 5px; text-align: center;">${index + 1}</td>
             <td style="border: 1px solid #000; padding: 5px;">${row.displayTime}</td>
+            <td style="border: 1px solid #000; padding: 5px;"><strong>${typeText}</strong></td>
             <td style="border: 1px solid #000; padding: 5px;">${row.name}</td>
             <td style="border: 1px solid #000; padding: 5px; text-align: center;">${row.grade}° ${row.section}</td>
             <td style="border: 1px solid #000; padding: 5px; text-align: center; ${color}">${row._calcStatus}</td>
