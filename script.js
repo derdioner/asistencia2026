@@ -1856,3 +1856,63 @@ function speak(text) {
         window.speechSynthesis.speak(utterance);
     }
 }
+async function exportIncidentsToExcel() {
+    if (!db) return alert("No hay conexión con la base de datos.");
+
+    const btn = document.querySelector('button[onclick="exportIncidentsToExcel()"]');
+    const originalText = btn ? btn.innerHTML : 'Exportar';
+    if (btn) {
+        btn.innerHTML = "⏳ Descargando...";
+        btn.disabled = true;
+    }
+
+    try {
+        // Fetch ALL incidents from cloud
+        const snapshot = await db.collection('incidents')
+            .orderBy('date', 'desc')
+            .get();
+
+        if (snapshot.empty) {
+            alert("No hay registros de incidencias en la Nube.");
+            if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        // BOM for Excel
+        csvContent += "\ufeff";
+        csvContent += "Fecha;Alumno;DNI;Tipo de Incidencia;Descripción;Estado;Fecha Resolución\n";
+
+        snapshot.forEach(doc => {
+            const row = doc.data();
+            const date = formatDateFriendly(row.date);
+            const resolvedAt = row.resolvedAt ? formatDateFriendly(row.resolvedAt) : '-';
+            const safeName = `"${row.studentName || ''}"`;
+            const safeDesc = `"${(row.description || '').replace(/"/g, '""')}"`;
+            const status = row.status === 'active' ? 'Activa' : 'Resuelta';
+
+            csvContent += `${date};${safeName};${row.studentDni};${row.type};${safeDesc};${status};${resolvedAt}\n`;
+        });
+
+        downloadCSV(csvContent, `Historial_Incidencias_${new Date().toISOString().slice(0, 10)}.csv`);
+
+    } catch (e) {
+        console.error("Error exportando incidencias:", e);
+        alert("Error al descargar: " + e.message);
+    }
+
+    if (btn) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function formatDateFriendly(isoString) {
+    if (!isoString) return "-";
+    try {
+        const d = new Date(isoString);
+        return d.toLocaleString('es-PE');
+    } catch (e) {
+        return isoString;
+    }
+}
