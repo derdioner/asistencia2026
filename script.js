@@ -1961,3 +1961,30 @@ function formatDateFriendly(isoString) {
         return isoString;
     }
 }
+
+async function forceAppRefresh() {
+    if (confirm("Se borrará el caché del navegador para cargar la última versión. ¿Continuar?")) {
+        try {
+            // 1. Unregister all service workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            // 2. Clear all caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (let name of cacheNames) {
+                    await caches.delete(name);
+                }
+            }
+            // 3. Reload from server
+            alert("Caché limpiado. La página se recargará ahora.");
+            window.location.reload(true);
+        } catch (e) {
+            console.error("Error clearing cache:", e);
+            window.location.reload(true);
+        }
+    }
+}
