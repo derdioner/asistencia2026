@@ -1769,10 +1769,12 @@ async function searchStudentForIncident() {
         const data = snap.docs[0].data();
         selectedIncidentStudent = {
             dni: data.id,
-            name: data.n
+            name: data.n,
+            grade: data.g,
+            section: data.s
         };
 
-        document.getElementById('incidentStudentName').innerText = data.n;
+        document.getElementById('incidentStudentName').innerText = `${data.n} (${data.g}° "${data.s}")`;
         document.getElementById('incidentStudentInfo').style.display = 'block';
 
     } catch (e) {
@@ -1793,6 +1795,8 @@ async function registerIncident() {
         await db.collection('incidents').add({
             studentDni: selectedIncidentStudent.dni,
             studentName: selectedIncidentStudent.name,
+            studentGrade: selectedIncidentStudent.grade,
+            studentSection: selectedIncidentStudent.section,
             type: type,
             description: description,
             date: new Date().toISOString(),
@@ -1834,7 +1838,7 @@ function loadActiveIncidents() {
                 tr.innerHTML = `
                     <td style="padding:10px; border-bottom:1px solid #eee;">
                         <strong>${data.studentName}</strong><br>
-                        <small style="color:#666;">DNI: ${data.studentDni}</small>
+                        <small style="color:#666;">DNI: ${data.studentDni} | ${data.studentGrade || ''}° "${data.studentSection || ''}"</small>
                     </td>
                     <td style="padding:10px; border-bottom:1px solid #eee;">
                         <span style="color:#D32F2F; font-weight:bold; font-size:11px;">[${data.type}]</span><br>
@@ -1929,7 +1933,7 @@ async function exportIncidentsToExcel() {
         let csvContent = "data:text/csv;charset=utf-8,";
         // BOM for Excel
         csvContent += "\ufeff";
-        csvContent += "Fecha;Alumno;DNI;Tipo de Incidencia;Descripción;Estado;Fecha Resolución\n";
+        csvContent += "Fecha;Alumno;DNI;Grado;Sección;Tipo de Incidencia;Descripción;Estado;Fecha Resolución\n";
 
         snapshot.forEach(doc => {
             const row = doc.data();
@@ -1939,7 +1943,7 @@ async function exportIncidentsToExcel() {
             const safeDesc = `"${(row.description || '').replace(/"/g, '""')}"`;
             const status = row.status === 'active' ? 'Activa' : 'Resuelta';
 
-            csvContent += `${date};${safeName};${row.studentDni};${row.type};${safeDesc};${status};${resolvedAt}\n`;
+            csvContent += `${date};${safeName};${row.studentDni};${row.studentGrade || ''};${row.studentSection || ''};${row.type};${safeDesc};${status};${resolvedAt}\n`;
         });
 
         downloadCSV(csvContent, `Historial_Incidencias_${new Date().toISOString().slice(0, 10)}.csv`);
