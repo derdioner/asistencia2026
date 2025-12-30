@@ -364,6 +364,43 @@ let html5QrcodeScanner = null;
 let isScanning = false;
 let currentAttendanceList = []; // Local cache for table rendering
 let unsubscribeListener = null;
+let currentScanMode = 'ingreso'; // 'ingreso' or 'salida'
+
+function setScanMode(mode) {
+    currentScanMode = mode;
+
+    const btnIngreso = document.getElementById('btnModeIngreso');
+    const btnSalida = document.getElementById('btnModeSalida');
+    const statusMsg = document.getElementById('scanStatusMsg');
+
+    if (mode === 'ingreso') {
+        if (btnIngreso) {
+            btnIngreso.style.background = 'var(--primary-color)';
+            btnIngreso.style.color = 'white';
+            btnIngreso.style.border = '2px solid var(--primary-color)';
+        }
+        if (btnSalida) {
+            btnSalida.style.background = 'white';
+            btnSalida.style.color = '#607D8B';
+            btnSalida.style.border = '2px solid #607D8B';
+        }
+        if (statusMsg) statusMsg.innerText = "Escanea el código QR del alumno [MODO INGRESO]";
+    } else {
+        if (btnSalida) {
+            btnSalida.style.background = '#607D8B';
+            btnSalida.style.color = 'white';
+            btnSalida.style.border = '2px solid #607D8B';
+        }
+        if (btnIngreso) {
+            btnIngreso.style.background = 'white';
+            btnIngreso.style.color = 'var(--primary-color)';
+            btnIngreso.style.border = '2px solid var(--primary-color)';
+        }
+        if (statusMsg) statusMsg.innerText = "Escanea el código QR del alumno [MODO SALIDA]";
+    }
+
+    showToast(`Modo cambiado a: ${mode.toUpperCase()}`, 'info');
+}
 
 function startScanner() {
     if (isScanning) return;
@@ -454,15 +491,17 @@ async function onScanSuccess(decodedText, decodedResult) {
         const duplicateCheck = await db.collection('attendance')
             .where('dni', '==', data.id)
             .where('displayDate', '==', todayDate)
+            .where('type', '==', currentScanMode)
             .get();
 
         if (!duplicateCheck.empty) {
+            const modeText = currentScanMode === 'ingreso' ? 'asistencia' : 'salida';
             if (incidentData) {
                 playAlertSound();
-                showToast(`⚠️ REPETIDO + ALERTA: ${data.n} tiene una INCIDENCIA`, 'error');
-                speak(`Atención: el estudiante ${data.n} ya registró asistencia pero tiene una incidencia.`);
+                showToast(`⚠️ REPETIDO + ALERTA: ${data.n} ya registró ${modeText}`, 'error');
+                speak(`Atención: el estudiante ${data.n} ya registró ${modeText} pero tiene una incidencia.`);
             } else {
-                showToast(`⚠️ ${data.n} ya registró asistencia hoy`, 'error');
+                showToast(`⚠️ ${data.n} ya registró ${modeText} hoy`, 'error');
             }
             return;
         }
@@ -476,7 +515,8 @@ async function onScanSuccess(decodedText, decodedResult) {
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             displayTime: now.toLocaleTimeString(),
             displayDate: todayDate,
-            status: determineLateness(now)
+            status: determineLateness(now),
+            type: currentScanMode
         });
 
         const isBirthday = checkBirthday(data.dob);
@@ -507,7 +547,8 @@ async function onScanSuccess(decodedText, decodedResult) {
                 if (hour >= 12) greeting = "Buenas tardes";
                 if (hour >= 18) greeting = "Buenas noches";
 
-                const message = `${greeting}, el estudiante *${data.n}* asistió al colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
+                const verb = currentScanMode === 'ingreso' ? 'asistió al' : 'salió del';
+                const message = `${greeting}, el estudiante *${data.n}* ${verb} colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
                 const encodedMsg = encodeURIComponent(message);
                 let phone = data.p.replace(/\D/g, '');
                 if (phone.length === 9) phone = "51" + phone;
@@ -565,10 +606,14 @@ function renderHistory() {
         const color = isPuntual ? '#2E7D32' : '#C62828';
         const bg = isPuntual ? '#E8F5E9' : '#FFEBEE';
 
+        const typeText = (record.type || 'ingreso').toUpperCase();
+        const typeColor = (record.type === 'salida') ? '#1976D2' : '#2E7D32';
+        const typeBg = (record.type === 'salida') ? '#E3F2FD' : '#E8F5E9';
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${record.displayTime}</td>
-            <td><strong>${record.name}</strong></td>
+            <td><strong>${record.name}</strong><br><span style="font-size:10px; padding: 2px 5px; border-radius:4px; background:${typeBg}; color:${typeColor}; font-weight:bold;">${typeText}</span></td>
             <td>${record.dni}</td>
             <td>${record.grade}°</td>
             <td>"${record.section}"</td>

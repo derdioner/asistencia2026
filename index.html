@@ -193,8 +193,21 @@
         <div id="scanner" class="tab-content">
             <div class="card">
                 <h2>Registrar Asistencia</h2>
+
+                <!-- MODE TOGGLE (Ingreso / Salida) -->
+                <div class="mode-selector" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button id="btnModeIngreso" onclick="setScanMode('ingreso')" class="btn-mode active"
+                        style="flex: 1; padding: 12px; border: 2px solid var(--primary-color); border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; background: var(--primary-color); color: white;">
+                        🌅 INGRESO
+                    </button>
+                    <button id="btnModeSalida" onclick="setScanMode('salida')" class="btn-mode"
+                        style="flex: 1; padding: 12px; border: 2px solid #607D8B; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; background: white; color: #607D8B;">
+                        🌇 SALIDA
+                    </button>
+                </div>
+
                 <div id="reader"></div>
-                <p class="status-text">Escanea el código QR del alumno</p>
+                <p class="status-text" id="scanStatusMsg">Escanea el código QR del alumno [MODO INGRESO]</p>
 
                 <!-- CONFIG TOGGLE -->
                 <div
