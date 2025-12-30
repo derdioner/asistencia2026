@@ -30,7 +30,8 @@ body {
 }
 
 .tab-nav::-webkit-scrollbar {
-    display: none; /* Hide scrollbar for cleaner look on mobile */
+    display: none;
+    /* Hide scrollbar for cleaner look on mobile */
 }
 
 .tab-btn {
@@ -60,6 +61,15 @@ body {
     display: block;
     flex: 1;
     /* Causes the content to grow and push footer down */
+}
+
+#incidents {
+    padding-top: 5px;
+}
+
+.card h3:first-child,
+.card h2:first-child {
+    margin-top: 0;
 }
 
 .card {

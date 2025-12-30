@@ -455,81 +455,80 @@
                 </button>
             </div>
         </div>
-    </div>
-    <!-- INCIDENTS SECTION -->
-    <div id="incidents" class="tab-content">
-        <div class="card">
-            <h3>📝 Registrar Nueva Incidencia</h3>
-            <div class="row" style="align-items: flex-end; gap: 10px;">
-                <div class="form-group" style="flex: 2;">
-                    <label>DNI del Alumno</label>
-                    <input type="text" id="incidentDNI" placeholder="DNI (8 dígitos)" maxlength="8">
+        <!-- INCIDENTS SECTION -->
+        <div id="incidents" class="tab-content">
+            <div class="card">
+                <h3>📝 Registrar Nueva Incidencia</h3>
+                <div class="row" style="align-items: flex-end; gap: 10px;">
+                    <div class="form-group" style="flex: 2;">
+                        <label>DNI del Alumno</label>
+                        <input type="text" id="incidentDNI" placeholder="DNI (8 dígitos)" maxlength="8">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <button onclick="searchStudentForIncident()" class="btn-secondary" style="height: 42px;">🔍
+                            Buscar</button>
+                    </div>
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <button onclick="searchStudentForIncident()" class="btn-secondary" style="height: 42px;">🔍
-                        Buscar</button>
+
+                <div id="incidentStudentInfo"
+                    style="display:none; margin: 15px 0; padding: 10px; background: #f0f4f8; border-radius: 8px; border-left: 4px solid #1976D2;">
+                    <p style="margin:0; font-weight: bold; color: #1976D2;">Alumno: <span
+                            id="incidentStudentName">...</span></p>
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría de Incidencia</label>
+                    <select id="incidentType" class="input-field">
+                        <option value="Incidencias de convivencia">1. Incidencias de convivencia</option>
+                        <option value="Incidencias tecnológicas">2. Incidencias tecnológicas</option>
+                        <option value="Incidencias relacionadas con normas institucionales">3. Incidencias relacionadas
+                            con normas institucionales</option>
+                        <option value="Incidencias graves">4. Incidencias graves</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Comentario / Detalle</label>
+                    <textarea id="incidentComment" class="input-field" style="height: 80px; padding: 10px;"
+                        placeholder="Detalle lo sucedido..."></textarea>
+                </div>
+
+                <button onclick="registerIncident()" class="btn-danger" style="width: 100%; font-weight: bold;">
+                    🚩 REGISTRAR INCIDENCIA
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>🚩 Incidencias Activas</h3>
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="background: #FFEBEE; color: #C62828;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left;">Alumno</th>
+                                <th style="padding: 10px; text-align: left;">Tipo / Detalle</th>
+                                <th style="padding: 10px; text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activeIncidentsList">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div id="incidentStudentInfo"
-                style="display:none; margin: 15px 0; padding: 10px; background: #f0f4f8; border-radius: 8px; border-left: 4px solid #1976D2;">
-                <p style="margin:0; font-weight: bold; color: #1976D2;">Alumno: <span
-                        id="incidentStudentName">...</span></p>
-            </div>
-
-            <div class="form-group">
-                <label>Categoría de Incidencia</label>
-                <select id="incidentType" class="input-field">
-                    <option value="Incidencias de convivencia">1. Incidencias de convivencia</option>
-                    <option value="Incidencias tecnológicas">2. Incidencias tecnológicas</option>
-                    <option value="Incidencias relacionadas con normas institucionales">3. Incidencias relacionadas
-                        con normas institucionales</option>
-                    <option value="Incidencias graves">4. Incidencias graves</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Comentario / Detalle</label>
-                <textarea id="incidentComment" class="input-field" style="height: 80px; padding: 10px;"
-                    placeholder="Detalle lo sucedido..."></textarea>
-            </div>
-
-            <button onclick="registerIncident()" class="btn-danger" style="width: 100%; font-weight: bold;">
-                🚩 REGISTRAR INCIDENCIA
-            </button>
-        </div>
-
-        <div class="card">
-            <h3>🚩 Incidencias Activas</h3>
-            <div class="table-responsive">
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                    <thead style="background: #FFEBEE; color: #C62828;">
-                        <tr>
-                            <th style="padding: 10px; text-align: left;">Alumno</th>
-                            <th style="padding: 10px; text-align: left;">Tipo / Detalle</th>
-                            <th style="padding: 10px; text-align: center;">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activeIncidentsList">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
+            <div class="card no-print" style="margin-top: 20px;">
+                <h3>Acciones de Historial</h3>
+                <button onclick="exportIncidentsToExcel()" class="btn-secondary"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #607D8B;">
+                    📊 Descargar Historial de Incidencias (Excel)
+                </button>
             </div>
         </div>
-
-        <div class="card no-print" style="margin-top: 20px;">
-            <h3>Acciones de Historial</h3>
-            <button onclick="exportIncidentsToExcel()" class="btn-secondary"
-                style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #607D8B;">
-                📊 Descargar Historial de Incidencias (Excel)
-            </button>
-        </div>
-    </div>
-    <footer
-        style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
-        &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-        <br><span style="font-size: 10px; opacity: 0.8;"> Versión 9.8 (Estable)</span>
-    </footer>
+        <footer
+            style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
+            &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 9.8 (Estable)</span>
+        </footer>
     </div>
 
     <!-- Toast Notification -->
