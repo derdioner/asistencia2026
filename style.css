@@ -64,7 +64,11 @@ body {
 }
 
 #incidents {
-    padding-top: 5px;
+    padding-top: 0;
+}
+
+#incidents .card:first-child {
+    padding-top: 10px;
 }
 
 .card h3:first-child,
