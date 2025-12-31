@@ -68,7 +68,12 @@ body {
 }
 
 #incidents .card:first-child {
-    padding-top: 10px;
+    padding-top: 0;
+}
+
+#incidents .card:first-child h3 {
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .card h3:first-child,
