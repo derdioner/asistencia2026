@@ -746,7 +746,7 @@ function playBirthdayTune(name) {
 }
 
 async function exportToExcel() {
-    if (!db) return alert("No hay conexión con la base de datos.");
+    if (!db) return showToast("No hay conexión con la base de datos.", "error");
 
     const btn = document.querySelector('button[onclick="exportToExcel()"]');
     const originalText = btn ? btn.innerText : 'Exportar';
@@ -821,7 +821,7 @@ async function searchStudent() {
     const dni = searchInput.value.trim();
 
     if (!dni || dni.length !== 8) {
-        alert("Por favor ingrese un DNI válido de 8 dígitos.");
+        showToast("Por favor ingrese un DNI válido de 8 dígitos.", "error");
         return;
     }
 
@@ -832,7 +832,7 @@ async function searchStudent() {
         const snapshot = await db.collection('students').where('id', '==', dni).get();
 
         if (snapshot.empty) {
-            alert("❌ Alumno no encontrado con ese DNI.");
+            showToast("❌ Alumno no encontrado con ese DNI.", "error");
             return;
         }
 
@@ -880,7 +880,7 @@ async function searchStudent() {
 
     } catch (error) {
         console.error(error);
-        alert("Error al buscar: " + error.message);
+        showToast("Error al buscar: " + error.message, "error");
     }
 }
 
@@ -952,7 +952,7 @@ async function attemptLogin() {
     }
 
     if (!db) {
-        alert("Error de conexión a la base de datos.");
+        showToast("Error de conexión a la base de datos.", "error");
         return;
     }
 
@@ -1115,7 +1115,7 @@ async function createUser() {
     const role = document.getElementById('newUserRole').value;
 
     if (!name || pin.length < 4) {
-        alert("Por favor ingrese un nombre y un PIN de al menos 4 dígitos.");
+        showToast("Ingrese nombre y PIN (mín 4 dígitos).", "error");
         return;
     }
 
@@ -1123,7 +1123,7 @@ async function createUser() {
         // Check duplication
         const check = await db.collection('app_users').where('pin', '==', pin).get();
         if (!check.empty) {
-            alert("❌ Ese PIN ya está en uso por otro usuario.");
+            showToast("❌ Ese PIN ya está en uso.", "error");
             return;
         }
 
@@ -1143,7 +1143,7 @@ async function createUser() {
         loadUsers(); // Refresh list automatically
     } catch (e) {
         console.error(e);
-        alert("Error al crear usuario: " + e.message);
+        showToast("Error al crear usuario: " + e.message, "error");
     }
 }
 
@@ -1199,7 +1199,7 @@ async function deleteUser(docId, userName) {
         await db.collection('app_users').doc(docId).delete();
         showToast("🗑 Usuario eliminado.", "info");
     } catch (e) {
-        alert("Error: " + e.message);
+        showToast("Error: " + e.message, "error");
     }
 }
 
@@ -1582,7 +1582,7 @@ async function revokeDevice(docId, devName) {
             logoutAndDeauthorize();
         }
     } catch (e) {
-        alert("Error: " + e.message);
+        showToast("Error: " + e.message, "error");
     }
 }
 
@@ -1716,14 +1716,14 @@ async function revokeAllDevices() {
 
     const input = prompt("Para confirmar, escribe: BORRAR TODO");
     if (input !== 'BORRAR TODO') {
-        alert("Acción cancelada.");
+        showToast("Acción cancelada.", "info");
         return;
     }
 
     try {
         const snap = await db.collection('devices').get();
         if (snap.empty) {
-            alert("No hay dispositivos registrados para borrar.");
+            showToast("No hay dispositivos registrados.", "info");
             return;
         }
 
@@ -1733,11 +1733,11 @@ async function revokeAllDevices() {
         });
 
         await batch.commit();
-        alert("✅ Todos los dispositivos han sido eliminados correctamente.");
+        showToast("✅ Dispositivos eliminados.", "success");
         logoutAndDeauthorize();
     } catch (e) {
         console.error(e);
-        alert("Error al borrar dispositivos: " + e.message);
+        showToast("Error al borrar: " + e.message, "error");
     }
 }
 
@@ -1754,12 +1754,12 @@ let selectedIncidentStudent = null;
 
 async function searchStudentForIncident() {
     const dni = document.getElementById('incidentDNI').value.trim();
-    if (dni.length !== 8) return alert("Ingrese un DNI de 8 dígitos");
+    if (dni.length !== 8) return showToast("Ingrese un DNI de 8 dígitos", "error");
 
     try {
         const snap = await db.collection('students').where('id', '==', dni).get();
         if (snap.empty) {
-            alert("Alumno no encontrado");
+            showToast("Alumno no encontrado", "error");
             selectedIncidentStudent = null;
             document.getElementById('incidentStudentInfo').style.display = 'none';
             return;
@@ -1778,17 +1778,17 @@ async function searchStudentForIncident() {
 
     } catch (e) {
         console.error(e);
-        alert("Error al buscar alumno");
+        showToast("Error al buscar alumno", "error");
     }
 }
 
 async function registerIncident() {
-    if (!selectedIncidentStudent) return alert("Primero busque y seleccione un alumno");
+    if (!selectedIncidentStudent) return showToast("Seleccione un alumno primero", "info");
 
     const type = document.getElementById('incidentType').value;
     const description = document.getElementById('incidentComment').value.trim();
 
-    if (!description) return alert("Por favor ingrese un comentario sobre la incidencia.");
+    if (!description) return showToast("Ingrese un comentario sobre la incidencia.", "error");
 
     try {
         await db.collection('incidents').add({
@@ -1812,7 +1812,7 @@ async function registerIncident() {
 
     } catch (e) {
         console.error(e);
-        alert("Error al registrar incidencia");
+        showToast("Error al registrar incidencia", "error");
     }
 }
 
@@ -1867,7 +1867,7 @@ async function resolveIncident(id) {
         showToast("Incidencia resuelta", "success");
     } catch (e) {
         console.error(e);
-        alert("Error al resolver incidencia");
+        showToast("Error al resolver incidencia", "error");
     }
 }
 
@@ -1908,7 +1908,7 @@ function speak(text) {
     }
 }
 async function exportIncidentsToExcel() {
-    if (!db) return alert("No hay conexión con la base de datos.");
+    if (!db) return showToast("No hay conexión con la base de datos.", "error");
 
     const btn = document.querySelector('button[onclick="exportIncidentsToExcel()"]');
     const originalText = btn ? btn.innerHTML : 'Exportar';
@@ -1924,7 +1924,7 @@ async function exportIncidentsToExcel() {
             .get();
 
         if (snapshot.empty) {
-            alert("No hay registros de incidencias en la Nube.");
+            showToast("No hay incidencias en la Nube.", "info");
             if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
             return;
         }
@@ -1949,7 +1949,7 @@ async function exportIncidentsToExcel() {
 
     } catch (e) {
         console.error("Error exportando incidencias:", e);
-        alert("Error al descargar: " + e.message);
+        showToast("Error al descargar: " + e.message, "error");
     }
 
     if (btn) {
@@ -1986,7 +1986,7 @@ async function forceAppRefresh() {
                 }
             }
             // 3. Reload from server
-            alert("Caché limpiado. La página se recargará ahora.");
+            showToast("Caché limpiado. Recargando...", "success");
             window.location.reload(true);
         } catch (e) {
             console.error("Error clearing cache:", e);
