@@ -1,11 +1,13 @@
-const CACHE_NAME = 'qr-attendance-v17';
+const CACHE_NAME = 'qr-attendance-v21';
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
     './script.js',
     './manifest.json',
-    './logo.png'
+    './logo.png',
+    './icon-192.png',
+    './icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {

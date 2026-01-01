@@ -66,7 +66,7 @@ try {
     console.log("Firebase conectado");
 } catch (error) {
     console.warn("Error inicializando Firebase (¿Faltan las llaves?):", error);
-    alert("⚠️ Configura las llaves de Firebase en script.js para que funcione la nube.");
+    showToast("⚠️ Configura Firebase en script.js", "error");
 }
 
 // TABS LOGIC
@@ -110,7 +110,7 @@ function openTab(tabName) {
 // --- DIAGNOSTIC TOOL ---
 async function diagnoseConnection() {
     if (!db) {
-        alert("Error: Firebase no está configurado (Ver script.js).");
+        showToast("Error: Firebase no está configurado.", "error");
         return;
     }
 
@@ -122,15 +122,15 @@ async function diagnoseConnection() {
             device: navigator.userAgent
         });
 
-        alert("✅ CONEXIÓN EXITOSA\n\nEl sistema puede leer y escribir en la nube.\nSi tus datos no se guardan, puede ser un problema lógico, pero la conexión está bien.");
+        showToast("✅ CONEXIÓN EXITOSA. El sistema puede leer y escribir.", "success", 5000);
 
     } catch (error) {
         if (error.code === 'permission-denied') {
-            alert("🔒 BLOQUEADO POR PERMISOS\n\nTu base de datos está en 'Modo Bloqueado'.\n\nSOLUCIÓN:\n1. Ve a Firebase Console -> Firestore Database -> Reglas.\n2. Cambia 'allow read, write: if false;' por 'allow read, write: if true;'.\n3. Publicar.");
+            showToast("🔒 BLOQUEADO POR REGLAS DE SEGURIDAD. Revisa la consola de Firebase.", "error", 6000);
         } else if (error.code === 'unavailable') {
-            alert("📡 SIN CONEXIÓN\n\nNo se puede contactar con Firebase. Revisa tu internet o firewall.");
+            showToast("📡 SIN CONEXIÓN A INTERNET.", "error");
         } else {
-            alert("❌ ERROR DE CONEXIÓN: " + error.message);
+            showToast("❌ ERROR DE CONEXIÓN: " + error.message, "error");
         }
     }
 }
@@ -174,7 +174,7 @@ function subscribeToStudents() {
 
             // Check for missing index error
             if (error.code === 'failed-precondition') {
-                alert("⚠️ REQUIERE ÍNDICE: Para ver los 'Últimos 5' ordenados, Firestore necesita un índice.\n\nAbre la Consola del navegador (F12), mira el error rojo y dale clic al enlace para crearlo automáticamente.");
+                showToast("⚠️ REQUIERE ÍNDICE EN FIRESTORE. Ver consola F12.", "error", 6000);
             }
 
             const list = document.getElementById('generatedList');
@@ -189,7 +189,7 @@ setTimeout(subscribeToStudents, 1500);
 
 async function generateQR() {
     if (!db) {
-        return alert("Firebase no configurado o sin conexión");
+        return showToast("Firebase no configurado o sin conexión", "error");
     }
 
     const nameInput = document.getElementById('studentName');
@@ -206,17 +206,17 @@ async function generateQR() {
     const dob = document.getElementById('studentDOB').value;
 
     if (!name || !dni) {
-        alert("Por favor ingresa al menos Nombre y DNI.");
+        showToast("Ingresa al menos Nombre y DNI.", "error");
         return;
     }
 
     if (dni.length !== 8) {
-        alert("El DNI debe tener exactamente 8 números.");
+        showToast("El DNI debe tener 8 números.", "error");
         return;
     }
 
     if (phone && phone.length !== 9) {
-        alert("El número del apoderado debe tener exactamente 9 números.");
+        showToast("El teléfono debe tener 9 números.", "error");
         return;
     }
 
@@ -311,12 +311,12 @@ async function generateQR() {
             nameInput.focus();
         } catch (saveError) {
             console.error("Error guardando en nube:", saveError);
-            alert("⚠️ El QR se generó, pero NO se pudo guardar en la nube: " + saveError.message);
+            showToast("⚠️ Generado local, pero error en nube: " + saveError.message, "error", 5000);
         }
 
     } catch (error) {
         console.error("Error FATAL generando:", error);
-        alert("⚠️ Error inesperado: " + error.message);
+        showToast("⚠️ Error: " + error.message, "error");
     }
 }
 
@@ -325,7 +325,7 @@ async function exportGeneratedDatabase() {
     try {
         const snapshot = await db.collection('students').get();
         if (snapshot.empty) {
-            alert("No hay estudiantes en la base de datos.");
+            showToast("No hay estudiantes para exportar.", "info");
             return;
         }
 
@@ -343,7 +343,7 @@ async function exportGeneratedDatabase() {
 
     } catch (e) {
         console.error(e);
-        alert("Error descargando base de datos");
+        showToast("Error descargando base de datos", "error");
     }
 }
 
@@ -630,7 +630,7 @@ async function clearHistory() {
 
     // SECURITY CHECK
     if (currentUserRole !== 'ADMIN') {
-        alert("⛔ Acceso Denegado: Solo administradores pueden borrar el historial.");
+        showToast("⛔ Acceso Denegado: Solo administradores.", "error");
         return;
     }
 
@@ -642,7 +642,7 @@ async function clearHistory() {
         if (choice === "1") {
             if (confirm("¿Confirmar eliminación del HISTORIAL DE ASISTENCIA?")) {
                 await deleteCollection('attendance');
-                alert("Historial eliminado.");
+                showToast("Historial eliminado.", "success");
                 renderHistory();
             }
         } else if (choice === "2") {
@@ -653,23 +653,23 @@ async function clearHistory() {
                 await deleteCollection('students');
                 await deleteCollection('app_users'); // Include users
                 await deleteCollection('incidents'); // Delete incidents
-                alert("✅ SISTEMA REINICIADO DE FÁBRICA.\nSe han borrado todos los datos, incluyendo incidencias.");
-                location.reload();
+                showToast("✅ SISTEMA REINICIADO.", "success", 5000);
+                setTimeout(() => location.reload(), 2000);
             } else {
-                alert("Operación cancelada.");
+                showToast("Operación cancelada.", "info");
             }
         } else if (choice === "3") {
             if (confirm("⚠️ ¿Borrar TODOS los usuarios y roles creados?\n\nEl sistema se reiniciará y volverá a crear solo el Usuario Admin por defecto.")) {
                 showToast("Borrando usuarios...", "info");
                 await deleteCollection('app_users');
-                alert("✅ Usuarios eliminados. El sistema se recargará.");
-                location.reload();
+                showToast("✅ Usuarios eliminados.", "success");
+                setTimeout(() => location.reload(), 2000);
             }
         } else {
-            alert("Opción no válida.");
+            showToast("Opción no válida.", "info");
         }
     } else if (password !== null) {
-        alert("Contraseña incorrecta.");
+        showToast("Contraseña incorrecta.", "error");
     }
 }
 
@@ -762,7 +762,7 @@ async function exportToExcel() {
             .get();
 
         if (snapshot.empty) {
-            alert("No hay registros de asistencia en la Nube.");
+            showToast("No hay registros en la Nube.", "info");
             if (btn) { btn.innerText = originalText; btn.disabled = false; }
             return;
         }
@@ -792,12 +792,11 @@ async function exportToExcel() {
 
             csvContent += `${dateStr};${timeStr};${type};${status};${safeName};${row.dni};${row.grade};${row.section};${row.phone || ''}\n`;
         });
-
         downloadCSV(csvContent, `Asistencia_TOTAL_${new Date().toISOString().slice(0, 10)}.csv`);
 
     } catch (e) {
         console.error("Error exportando:", e);
-        alert("Error al descargar: " + e.message);
+        showToast("Error al descargar: " + e.message, "error");
     }
 
     if (btn) {
@@ -1492,14 +1491,14 @@ async function handleLogoClick() {
                 });
 
                 localStorage.setItem('DEVICE_AUTHORIZED', 'true');
-                alert("✅ ¡Dispositivo Autorizado y Registrado en la Nube!");
+                showToast("✅ Dispositivo Autorizado!", "success", 5000);
                 updateAuthDisplay();
             } catch (e) {
                 console.error(e);
-                alert("Error registrando dispositivo: " + e.message);
+                showToast("Error registrando dispositivo: " + e.message, "error");
             }
         } else if (input !== null) {
-            alert("❌ Clave Incorrecta");
+            showToast("❌ Clave Incorrecta", "error");
         }
     }
 }
@@ -1609,7 +1608,7 @@ async function generateFilteredReport(autoPrint = false) {
     const sectionVal = document.getElementById('filterSection').value;
 
     if (!dateVal) {
-        alert("Seleccione una fecha");
+        showToast("Seleccione una fecha", "error");
         return;
     }
 
