@@ -60,6 +60,7 @@ function installApp() {
 
 // Initialize Firebase
 let db;
+let unsubscribeDeviceListener = null; // Unsubscribe handle
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
@@ -1409,7 +1410,8 @@ function verifyDeviceAccess(userEmail) {
     const lockStatus = document.getElementById('lock-status');
 
     // Listener for Real-time approval
-    db.collection('authorized_devices').doc(myDeviceId)
+    if (unsubscribeDeviceListener) unsubscribeDeviceListener(); // Clear prev if any
+    unsubscribeDeviceListener = db.collection('authorized_devices').doc(myDeviceId)
         .onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -1646,6 +1648,10 @@ function rejectDevice(id) {
 
 
 function logout() {
+    if (unsubscribeDeviceListener) {
+        unsubscribeDeviceListener();
+        unsubscribeDeviceListener = null;
+    }
     firebase.auth().signOut().then(() => {
         console.log("Sesión cerrada");
     }).catch((error) => {
@@ -1675,7 +1681,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.19");
+    console.log("DOM LOADED v26.20");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
