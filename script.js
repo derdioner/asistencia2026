@@ -1419,15 +1419,20 @@ function verifyDeviceAccess(userEmail) {
                     const email = userEmail;
                     db.collection('app_users').where('email', '==', email).get()
                         .then(snap => {
-                            let role = 'ADMIN'; // Default fallback for Owner
+                            let role = 'AUXILIAR'; // SAFER DEFAULT
+
+                            // Whitelist Super Admins (Prevent Lockout)
+                            const superAdmins = ['derda@genaro.edu.pe', 'admin@genaro.edu.pe'];
+                            if (superAdmins.includes(email.toLowerCase())) role = 'ADMIN';
+
                             if (!snap.empty) {
-                                role = snap.docs[0].data().role || 'AUXILIAR';
+                                role = snap.docs[0].data().role || role;
                             }
                             unlockApp(userEmail, role);
                         })
                         .catch(err => {
                             console.error("Role fetch error", err);
-                            unlockApp(userEmail, 'ADMIN'); // Fallback
+                            unlockApp(userEmail, 'AUXILIAR'); // Fail safe
                         });
                 } else if (data.status === 'blocked') {
                     if (lockStatus) {
@@ -1664,7 +1669,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.12");
+    console.log("DOM LOADED v26.13");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
