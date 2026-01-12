@@ -173,17 +173,17 @@ function subscribeToStudents() {
 
 
     unsubscribeStudents = db.collection('students')
-        .orderBy('created', 'desc') // Ordenar por fecha para ver los ÚLTIMOS REALES
-        .limit(5) // Solo los 5 últimos
+        .orderBy('created', 'desc')
+        .limit(5)
         .onSnapshot((snapshot) => {
-
+            console.log("Students snapshot size:", snapshot.size);
 
             const list = document.getElementById('generatedList');
             if (!list) return;
             list.innerHTML = "";
 
             if (snapshot.empty) {
-                list.innerHTML = "<tr><td colspan='3' style='text-align:center'>No hay datos</td></tr>";
+                list.innerHTML = "<tr><td colspan='3' style='text-align:center'>No hay datos recientes</td></tr>";
                 return;
             }
 
@@ -198,7 +198,24 @@ function subscribeToStudents() {
 
             // Check for missing index error
             if (error.code === 'failed-precondition') {
-                showToast("⚠️ REQUIERE ÍNDICE EN FIRESTORE. Ver consola F12.", "error", 6000);
+                showToast("⚠️ ERROR DE ÍNDICE: El sistema requiere un índice nuevo.", "error", 8000);
+                // Fallback: Try without sort just to show something
+                console.log("Attempting fallback query without sort...");
+                db.collection('students').limit(5).get().then(snap => {
+                    const list = document.getElementById('generatedList');
+                    if (list) {
+                        list.innerHTML = "";
+                        snap.forEach(doc => {
+                            const s = doc.data();
+                            const row = document.createElement('tr');
+                            row.innerHTML = `<td>${s.n} (Sin Orden)</td><td>${s.g}°</td><td>"${s.s}"</td>`;
+                            list.appendChild(row);
+                        });
+                        showToast("⚠️ Mostrando lista desordenada (Fallback)", "info");
+                    }
+                });
+            } else {
+                showToast(`❌ Error lista: ${error.message}`, "error");
             }
 
             const list = document.getElementById('generatedList');
@@ -216,6 +233,12 @@ async function generateQR() {
         return showToast("Firebase no configurado o sin conexión", "error");
     }
 
+    const btn = document.querySelector('button[onclick="generateQR()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Procesando...";
+    }
+
     const nameInput = document.getElementById('studentName');
     const dniInput = document.getElementById('studentDNI');
     const gradeInput = document.getElementById('studentGrade');
@@ -229,22 +252,23 @@ async function generateQR() {
     const phone = phoneInput.value.trim();
     const dob = document.getElementById('studentDOB').value;
 
-    if (!name || !dni) {
-        showToast("Ingresa al menos Nombre y DNI.", "error");
-        return;
-    }
-
-    if (dni.length !== 8) {
-        showToast("El DNI debe tener 8 números.", "error");
-        return;
-    }
-
-    if (phone && phone.length !== 9) {
-        showToast("El teléfono debe tener 9 números.", "error");
-        return;
-    }
-
     try {
+        if (!name || !dni) {
+            showToast("Ingresa al menos Nombre y DNI.", "error");
+            return;
+        }
+
+        if (dni.length !== 8) {
+            showToast("El DNI debe tener 8 números.", "error");
+            return;
+        }
+
+        if (phone && phone.length !== 9) {
+            showToast("El teléfono debe tener 9 números.", "error");
+            return;
+        }
+
+        // try { (Merged with outer try)
         const docRef = await db.collection('students').where('id', '==', dni).get();
         if (!docRef.empty) {
             const existingDoc = docRef.docs[0];
@@ -341,6 +365,11 @@ async function generateQR() {
     } catch (error) {
         console.error("Error FATAL generando:", error);
         showToast("⚠️ Error: " + error.message, "error");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Generar QR";
+        }
     }
 }
 
@@ -380,6 +409,85 @@ function downloadQR() {
         const name = lastGeneratedStudent ? lastGeneratedStudent.n.replace(/\s+/g, '_') : 'Asistencia';
         link.download = `QR_${name}.png`;
         link.click();
+    }
+}
+
+// --- DUPLICATE CLEANER ---
+async function scanAndFixDuplicates() {
+    if (!confirm("⚠️ ¿Iniciar escaneo de duplicados?\n\nEsto buscará alumnos con el mismo DNI y te permitirá borrar los repetidos viejos.")) return;
+
+    const btn = document.getElementById('cleanerBtn');
+    if (btn) { btn.disabled = true; btn.innerText = "⏳ Escaneando..."; }
+
+    try {
+        const snapshot = await db.collection('students').get();
+        const map = new Map();
+        let duplicatesCount = 0;
+
+        snapshot.forEach(doc => {
+            const s = doc.data();
+            if (!map.has(s.id)) {
+                map.set(s.id, []);
+            }
+            map.get(s.id).push({ docId: doc.id, ...s });
+        });
+
+        let found = false;
+
+        // Use for...of loop for async await inside
+        for (const [dni, records] of map) {
+            if (records.length > 1) {
+                found = true;
+                duplicatesCount++;
+
+                // Sort: Newest first (Keep newest) OR Oldest first (Keep Oldest)?
+                // Usually newest has corrected data. Let's keep NEWEST by created date.
+                // If no created date, rely on... luck? No, generated IDs.
+                // Let's assume created field exists as per my new code. If not, use docId.
+
+                // Sort descending by created date (newest first)
+                records.sort((a, b) => {
+                    const dateA = a.created ? new Date(a.created) : new Date(0);
+                    const dateB = b.created ? new Date(b.created) : new Date(0);
+                    return dateB - dateA;
+                });
+
+                const keeper = records[0];
+                const toDelete = records.slice(1);
+
+                const msg = `⚠️ DUPLICADO DETECTADO (DNI: ${dni})\n\n` +
+                    `Total registros: ${records.length}\n` +
+                    `Se conservará: ${keeper.n} (Creado: ${keeper.created || '?'})\n` +
+                    `Se BORRARÁN: ${toDelete.length} registros antiguos.\n\n` +
+                    `¿CONFIRMAR LIMPIEZA para este alumno?`;
+
+                if (confirm(msg)) {
+                    for (const doc of toDelete) {
+                        try {
+                            await db.collection('students').doc(doc.docId).delete();
+                            console.log("Deleted duplicate:", doc.docId);
+                        } catch (e) {
+                            alert("Error borrando: " + e.message);
+                        }
+                    }
+                    showToast(`✅ Limpiados duplicados para ${keeper.n}`, "success");
+                } else {
+                    showToast("Salteado.", "info");
+                }
+            }
+        }
+
+        if (duplicatesCount === 0) {
+            alert("✅ ¡No se encontraron duplicados en toda la base de datos!");
+        } else {
+            alert("🏁 Escaneo finalizado.");
+        }
+
+    } catch (e) {
+        console.error(e);
+        alert("Error en escaneo: " + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = "🧹 Detectar y Borrar Duplicados"; }
     }
 }
 
@@ -914,7 +1022,10 @@ async function searchStudent() {
 
 function addLogoToQR() {
     const container = document.getElementById('qrcode');
-    if (!container) return;
+    if (!container) {
+        console.warn("No QR container found");
+        return;
+    }
 
     // QRCode.js creates a canvas and an img. We need the canvas to draw.
     let canvas = container.querySelector('canvas');
@@ -985,20 +1096,32 @@ function addLogoToQR() {
         // 7. Update the Display Image
         if (qrImg) {
             qrImg.src = newCanvas.toDataURL();
+            // CRITICAL FIX: Remove library-added fixed attributes that squash the image
+            qrImg.removeAttribute('width');
+            qrImg.removeAttribute('height');
+
             // Optional: Update styling to ensure it doesn't look squashed in CSS
             qrImg.style.maxHeight = "100%";
             qrImg.style.width = "auto";
+            qrImg.style.height = "auto"; // Allow natural growth
+
+            // Re-show download button if hidden
+            document.getElementById('downloadBtn').style.display = 'block';
         }
     };
 
-    img.onload = () => {
+    // If image is already cached/loaded, fire immediately
+    if (img.complete && img.naturalHeight !== 0) {
         drawFinalQR(img);
-    };
-
-    img.onerror = () => {
-        console.warn("No se encontró logo.jpg/png, generando solo texto.");
-        drawFinalQR(null);
-    };
+    } else {
+        img.onload = () => {
+            drawFinalQR(img);
+        };
+        img.onerror = () => {
+            console.warn("No se encontró logo.jpg/png, generando solo texto.");
+            drawFinalQR(null);
+        };
+    }
 }
 
 // Helper to shorten names: "DEREK DAVID ZEVALLOS RUCOBA" -> "DEREK D. ZEVALLOS R."
@@ -1502,11 +1625,14 @@ function verifyDeviceAccess(userEmail) {
                     }
 
                     // 2. Regular Check
+                    // Ensure case-insensitive match assumption
                     db.collection('app_users').where('email', '==', email).get()
                         .then(snap => {
-                            let role = 'AUXILIAR'; // Default for unknown users
+                            let role = 'AUXILIAR'; // Default
                             if (!snap.empty) {
                                 role = snap.docs[0].data().role || 'AUXILIAR';
+                            } else {
+                                console.warn("User not found in app_users, defaulting to AUXILIAR");
                             }
                             unlockApp(userEmail, role);
                         })
@@ -1568,6 +1694,9 @@ function unlockApp(name, role) {
     }
 
     currentUserRole = role;
+
+    // DEBUG: Show role to user to confirm
+    showToast(`🔑 Acceso concedido: ${role}`, "info");
 
     // RESET VISIBILITY
     document.getElementById('tab-devices').style.display = 'none';

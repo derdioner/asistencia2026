@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.21">
+    <link rel="stylesheet" href="style.css?v=26.27">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.21">
+    <link rel="manifest" href="manifest.json?v=26.27">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -382,6 +382,11 @@
                         title="Descargar Base de Datos de Alumnos Registrados">
                         📂 Descargar Base de Datos (Alumnos)
                     </button>
+                    <button id="cleanerBtn" onclick="scanAndFixDuplicates()" class="btn-small"
+                        style="width: 100%; background: #FFEBEE; color: #D32F2F; border: 1px solid #FFCDD2; padding: 12px; margin-top: 10px;"
+                        title="Buscar alumnos repetidos y borrarlos">
+                        🧹 Detectar y Borrar Duplicados
+                    </button>
                 </div>
             </div>
         </div>
@@ -581,7 +586,7 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.21"></script>
+    <script src="script.js?v=26.27"></script>
 </body>
 
 </html>
