@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.8">
+    <link rel="stylesheet" href="style.css?v=26.9">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.8">
+    <link rel="manifest" href="manifest.json?v=26.9">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -556,7 +556,7 @@
         <!-- DEVICES TAB (MOVED HERE) -->
         <div id="devices" class="tab-content">
             <h1 style="background:#e0f7fa; padding:10px; border:2px solid #006064; color:#006064; text-align:center;">
-                ✅ ACTUALIZACIÓN v26.8 (REGISTRO USUARIOS)
+                ✅ ACTUALIZACIÓN v26.9 (REGISTRO CORREGIDO)
             </h1>
             <h2>📱 Control de Dispositivos</h2>
             <p style="text-align:center; color:#666; font-size:13px; margin-bottom:15px;">
@@ -588,11 +588,36 @@
                             <th>Acción</th>
                         </tr>
                     </thead>
+                    </thead>
                     <tbody id="pendingDevicesList">
-                        <button onclick="registerNewSystemUser()"
-                            style="width:100%; margin-top:10px; background:#4CAF50; color:white; padding:10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">
-                            ✨ REGISTRAR USUARIO
-                        </button>
+                        <!-- Loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- NEW: REGISTER USER SECTION (Moved outside table) -->
+            <div
+                style="background:white; padding:15px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-top:20px; margin-bottom:20px; border-left: 5px solid #4CAF50;">
+                <h3 style="margin-top:0; color:#2E7D32;">👤 Crear Nuevo Usuario de Acceso</h3>
+                <p style="font-size:12px; color:#666;">Registra nuevos auxiliares o administradores para que puedan
+                    iniciar sesión con Correo y Contraseña.</p>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <input type="email" id="regEmail" placeholder="Correo Electrónico"
+                        style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <input type="password" id="regPass" placeholder="Contraseña (Mín 6)"
+                        style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <input type="text" id="regName" placeholder="Nombre Completo"
+                        style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <select id="regRole" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                        <option value="AUXILIAR">AUXILIAR</option>
+                        <option value="ADMIN">ADMINISTRADOR</option>
+                    </select>
+                </div>
+                <button onclick="registerNewSystemUser()"
+                    style="width:100%; margin-top:10px; background:#4CAF50; color:white; padding:10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">
+                    ✨ REGISTRAR USUARIO
+                </button>
             </div>
 
             <!-- EXISTING DEVICE LISTS -->
@@ -633,7 +658,7 @@
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.8 (Estable)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.9 (Estable)</span>
         </footer>
     </div>
 
@@ -667,7 +692,7 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.8"></script>
+    <script src="script.js?v=26.9"></script>
 </body>
 
 </html>
