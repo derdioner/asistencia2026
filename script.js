@@ -108,6 +108,9 @@ function openTab(tabName) {
     }
 
     if (tabName === 'reports') {
+        // Ensure date is set before loading
+        const dateInput = document.getElementById('filterDate');
+        if (!dateInput.value) dateInput.valueAsDate = new Date();
         loadReports();
     }
 
@@ -1586,7 +1589,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.5");
+    console.log("DOM LOADED v26.6");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
@@ -1598,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // updateAuthDisplay(); // REMOVED: Function undefined and not needed
 
     // Load default report (No Print)
-    generateFilteredReport(false);
+    // Load default report logic moved to openTab('reports') to avoid auth errors on init
 });
 
 async function generateFilteredReport(autoPrint = false) {
