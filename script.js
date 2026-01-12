@@ -1664,7 +1664,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.11");
+    console.log("DOM LOADED v26.12");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
@@ -1675,8 +1675,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // logout(); // Ensure clean state
     // updateAuthDisplay(); // REMOVED: Function undefined and not needed
 
-    // Load default report (No Print)
     // Load default report logic moved to openTab('reports') to avoid auth errors on init
+
+    // Ensure Scanner is open by default logic via HTML classes, but we can enforce it:
+    openTab('scanner');
 });
 
 async function generateFilteredReport(autoPrint = false) {

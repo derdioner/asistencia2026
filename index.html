@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.11">
+    <link rel="stylesheet" href="style.css?v=26.12">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.11">
+    <link rel="manifest" href="manifest.json?v=26.12">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -126,8 +126,9 @@
 
 
         <nav class="tab-nav" id="mainTabs" style="display:none;"> <!-- Hidden by default, shown if unlocked -->
-            <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">📝 Generador</button>
-            <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">📷 Escáner</button>
+            <button class="tab-btn" onclick="openTab('generator')" id="tab-generator" style="display:none;">📝
+                Generador</button> <!-- Hidden by default, Admin only -->
+            <button class="tab-btn active" onclick="openTab('scanner')" id="tab-scanner">📷 Escáner</button>
             <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">📊 Reportes</button>
             <button class="tab-btn" onclick="openTab('incidents')" id="tab-incidents">🚩 Incidencias</button>
             <button class="tab-btn" onclick="openTab('devices')" id="tab-devices" style="display:none;">📱
@@ -136,7 +137,7 @@
         </nav>
 
         <!-- GENERATOR SECTION -->
-        <div id="generator" class="tab-content active">
+        <div id="generator" class="tab-content">
             <!-- SEARCH CARD -->
             <div class="card" style="background: #E8F5E9; border: 1px solid #C8E6C9;">
                 <h3>🔍 Buscar Alumno (Reimprimir)</h3>
@@ -234,7 +235,8 @@
         </div>
 
         <!-- SCANNER SECTION -->
-        <div id="scanner" class="tab-content">
+        <!-- SCANNER SECTION -->
+        <div id="scanner" class="tab-content active">
             <div class="card">
                 <h2>Registrar Asistencia</h2>
 
@@ -556,7 +558,7 @@
         <!-- DEVICES TAB (MOVED HERE) -->
         <div id="devices" class="tab-content">
             <h1 style="background:#e0f7fa; padding:10px; border:2px solid #006064; color:#006064; text-align:center;">
-                ✅ ACTUALIZACIÓN v26.11 (SOLO ESCÁNER)
+                ✅ ACTUALIZACIÓN v26.12 (A-G Oculto)
             </h1>
             <h2>📱 Control de Dispositivos</h2>
             <p style="text-align:center; color:#666; font-size:13px; margin-bottom:15px;">
@@ -658,7 +660,7 @@
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.11 (Estable)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.12 (Estable)</span>
         </footer>
     </div>
 
@@ -692,7 +694,7 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.11"></script>
+    <script src="script.js?v=26.12"></script>
 </body>
 
 </html>
