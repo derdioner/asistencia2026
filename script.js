@@ -933,29 +933,97 @@ function addLogoToQR() {
 
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    img.src = 'logo.png'; // Updated to PNG
+    img.src = 'logo.png';
 
-    img.onload = () => {
-        const size = canvas.width;
-        const logoSize = size * 0.22; // 22% of QR size
-        const x = (size - logoSize) / 2;
-        const y = (size - logoSize) / 2;
+    // Handle generic drawing (with or without logo success)
+    const drawFinalQR = (logoImg = null) => {
+        // 1. Setup new dimensions
+        const size = 400; // Fixed size from renderQR
+        const extraHeight = 50;
+        const totalHeight = size + extraHeight;
 
-        // Draw white background square for better contrast
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(x - 5, y - 5, logoSize + 10, logoSize + 10);
+        // 2. Create a new canvas for the composite image
+        const newCanvas = document.createElement('canvas');
+        newCanvas.width = size;
+        newCanvas.height = totalHeight;
+        const nCtx = newCanvas.getContext('2d');
 
-        ctx.drawImage(img, x, y, logoSize, logoSize);
+        // 3. Fill White Background
+        nCtx.fillStyle = '#ffffff';
+        nCtx.fillRect(0, 0, size, totalHeight);
 
-        // Update the IMG tag so the user sees the result (and download works)
+        // 4. Draw the original QR code (from the specific existing canvas)
+        nCtx.drawImage(canvas, 0, 0);
+
+        // 5. Draw Logo (if exists)
+        if (logoImg) {
+            const logoSize = size * 0.22;
+            const x = (size - logoSize) / 2;
+            const y = (size - logoSize) / 2; // Center in QR part
+
+            // White backing for logo
+            nCtx.fillStyle = '#ffffff';
+            nCtx.fillRect(x - 5, y - 5, logoSize + 10, logoSize + 10);
+
+            nCtx.drawImage(logoImg, x, y, logoSize, logoSize);
+        }
+
+        // 6. Draw Text
+        // Get name from global state
+        let nameText = "ALUMNO GENARINO";
+        if (typeof lastGeneratedStudent !== 'undefined' && lastGeneratedStudent && lastGeneratedStudent.n) {
+            nameText = formatStudentIDName(lastGeneratedStudent.n);
+        }
+
+        nCtx.font = "bold 26px Arial Narrow, Arial, sans-serif";
+        nCtx.fillStyle = "#000000";
+        nCtx.textAlign = "center";
+        nCtx.textBaseline = "middle";
+        // Position: Center X, and in the middle of the bottom margin
+        nCtx.fillText(nameText, size / 2, size + (extraHeight / 2));
+
+        // 7. Update the Display Image
         if (qrImg) {
-            qrImg.src = canvas.toDataURL();
+            qrImg.src = newCanvas.toDataURL();
+            // Optional: Update styling to ensure it doesn't look squashed in CSS
+            qrImg.style.maxHeight = "100%";
+            qrImg.style.width = "auto";
         }
     };
 
-    img.onerror = () => {
-        console.warn("No se encontró logo.jpg");
+    img.onload = () => {
+        drawFinalQR(img);
     };
+
+    img.onerror = () => {
+        console.warn("No se encontró logo.jpg/png, generando solo texto.");
+        drawFinalQR(null);
+    };
+}
+
+// Helper to shorten names: "DEREK DAVID ZEVALLOS RUCOBA" -> "DEREK D. ZEVALLOS R."
+function formatStudentIDName(fullName) {
+    if (!fullName) return "";
+    const parts = fullName.trim().toUpperCase().split(/\s+/);
+
+    // 1 Name
+    if (parts.length === 1) return parts[0];
+
+    // 2 Names: JUAN PEREZ -> JUAN PEREZ
+    if (parts.length === 2) return `${parts[0]} ${parts[1]}`;
+
+    // 3 Names: JUAN PEREZ LOPEZ -> JUAN PEREZ L. (Prioritize First Name + First Surname)
+    if (parts.length === 3) {
+        return `${parts[0]} ${parts[1]} ${parts[2][0]}.`;
+    }
+
+    // 4+ Names: DEREK DAVID ZEVALLOS RUCOBA -> DEREK D. ZEVALLOS R.
+    // Logic: Part0 (First) . Part1 (Initial) . Part2 (Surname) . PartLast (Initial)
+    if (parts.length >= 4) {
+        return `${parts[0]} ${parts[1][0]}. ${parts[2]} ${parts[parts.length - 1][0]}.`;
+    }
+
+    return fullName; // Fallback
 }
 
 // --- LOGIN & USER MANAGEMENT SYSTEM ---
@@ -1510,6 +1578,12 @@ function unlockApp(name, role) {
         document.getElementById('tab-devices').style.display = 'block';
         document.getElementById('tab-generator').style.display = 'block';
         currentUserRole = 'ADMIN';
+    }
+
+    // SIAGISTA PERMISSIONS (Generator + Reports + Incidents)
+    if (role === 'SIAGISTA') {
+        document.getElementById('tab-generator').style.display = 'block';
+        // Reports and Incidents are visible by default
     }
 
     // AUXILIAR can see Scanner, Reports, Incidents (Default visible)
