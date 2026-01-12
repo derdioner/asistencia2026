@@ -1417,20 +1417,23 @@ function verifyDeviceAccess(userEmail) {
                     // UNLOCK!
                     // Determine Role dynamically
                     const email = userEmail;
+
+                    // 1. Whitelist Super Admins (Prevent Lockout - SUPREME OVERRIDE)
+                    // Check this BEFORE DB query to avoid being blocked by DB errors
+                    const superAdmins = ['derda@genaro.edu.pe', 'admin@genaro.edu.pe'];
+                    if (superAdmins.includes(email.toLowerCase())) {
+                        console.log("Super Admin Identified via Whitelist: " + email);
+                        unlockApp(userEmail, 'ADMIN');
+                        return; // EXIT EARLY - Skip DB check
+                    }
+
+                    // 2. Regular Check
                     db.collection('app_users').where('email', '==', email).get()
                         .then(snap => {
-                            let role = 'AUXILIAR'; // SAFER DEFAULT
-
+                            let role = 'AUXILIAR'; // Default for unknown users
                             if (!snap.empty) {
-                                role = snap.docs[0].data().role || role;
+                                role = snap.docs[0].data().role || 'AUXILIAR';
                             }
-
-                            // Whitelist Super Admins (Prevent Lockout - SUPREME OVERRIDE)
-                            const superAdmins = ['derda@genaro.edu.pe', 'admin@genaro.edu.pe'];
-                            if (superAdmins.includes(email.toLowerCase())) {
-                                role = 'ADMIN';
-                            }
-
                             unlockApp(userEmail, role);
                         })
                         .catch(err => {
@@ -1672,7 +1675,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.14");
+    console.log("DOM LOADED v26.15");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
