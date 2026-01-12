@@ -657,7 +657,7 @@ async function clearHistory() {
     const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN para REINICIAR el sistema:");
 
     if (password === "339710") {
-        const choice = prompt("¿Qué desea borrar?\n\n1 = Solo Historial de Asistencia\n2 = REINICIO TOTAL DE FÁBRICA\n3 = SOLO Borrar Usuarios/Roles (Resetear Personal)");
+        const choice = prompt("¿Qué desea borrar?\n\n1 = Solo Historial de Asistencia\n2 = REINICIO TOTAL DE FÁBRICA\n3 = SOLO Borrar Usuarios/Roles\n4 = 🔥 REVOCAR TODOS LOS DISPOSITIVOS");
 
         if (choice === "1") {
             if (confirm("¿Confirmar eliminación del HISTORIAL DE ASISTENCIA?")) {
@@ -673,6 +673,8 @@ async function clearHistory() {
                 await deleteCollection('students');
                 await deleteCollection('app_users'); // Include users
                 await deleteCollection('incidents'); // Delete incidents
+                // Note: We do NOT delete authorized_devices here to avoid locking out the admin during reset, unless requested.
+                // If they want to reset devices too, they should use Option 4.
                 showToast("✅ SISTEMA REINICIADO.", "success", 5000);
                 setTimeout(() => location.reload(), 2000);
             } else {
@@ -685,6 +687,8 @@ async function clearHistory() {
                 showToast("✅ Usuarios eliminados.", "success");
                 setTimeout(() => location.reload(), 2000);
             }
+        } else if (choice === "4") {
+            revokeAllDevices(true);
         } else {
             showToast("Opción no válida.", "info");
         }
@@ -1537,7 +1541,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.2");
+    console.log("DOM LOADED v26.3");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
@@ -1661,32 +1665,19 @@ async function generateFilteredReport(autoPrint = false) {
     }
 }
 
-async function revokeAllDevices() {
-    if (!confirm("⚠️ ¿REVOCAR ABSOLUTAMENTE TODOS LOS DISPOSITIVOS?\n\nEsta acción borrará TODOS los permisos de acceso.\nTodos los dispositivos (incluido este) perderán el acceso y deberán volver a usar la clave Maestra.")) {
-        return;
-    }
-
-    const input = prompt("Para confirmar, escribe: BORRAR TODO");
-    if (input !== 'BORRAR TODO') {
-        showToast("Acción cancelada.", "info");
-        return;
+async function revokeAllDevices(manualTrigger = true) {
+    if (manualTrigger) {
+        if (!confirm("⚠️ ¿REVOCAR ABSOLUTAMENTE TODOS LOS DISPOSITIVOS?\n\nEsta acción borrará TODOS los permisos de acceso.\nTodos los dispositivos (incluido este) perderán el acceso y deberán volver a usar la clave Maestra.")) {
+            return;
+        }
+        const input = prompt("Para confirmar, escribe: BORRAR TODO");
+        if (input !== 'BORRAR TODO') return showToast("Acción cancelada.", "info");
     }
 
     try {
-        const snap = await db.collection('devices').get();
-        if (snap.empty) {
-            showToast("No hay dispositivos registrados.", "info");
-            return;
-        }
-
-        const batch = db.batch();
-        snap.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
-        await batch.commit();
-        showToast("✅ Dispositivos eliminados.", "success");
-        logoutAndDeauthorize();
+        await deleteCollection('authorized_devices');
+        showToast("✅ TODOS LOS DISPOSITIVOS REVOCADOS.", "success");
+        setTimeout(() => location.reload(), 2000);
     } catch (e) {
         console.error(e);
         showToast("Error al borrar: " + e.message, "error");
