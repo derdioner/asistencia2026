@@ -1537,7 +1537,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.0");
+    console.log("DOM LOADED v26.1");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
