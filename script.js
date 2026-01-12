@@ -1325,35 +1325,52 @@ function loginSuccess(name, role) {
 }
 
 // --- DEVICE SECURITY LOCK 2.0 ---
-async function verifyDeviceAccess(userEmail) {
-    // 1. INSTANT UNLOCK (Master Bypass) - Don't wait for DB
-    unlockApp(userEmail, true);
-
+// --- DEVICE SECURITY LOCK 2.0 (ACTIVE) ---
+function verifyDeviceAccess(userEmail) {
     if (!db || !myDeviceId) return;
+    const lockStatus = document.getElementById('lock-status');
 
-    // 2. Background Registration (So it appears in the list later)
-    try {
-        const docRef = db.collection('authorized_devices').doc(myDeviceId);
-        const doc = await docRef.get();
-
-        if (!doc.exists) {
-            // Register new device silently
-            await docRef.set({
-                id: myDeviceId,
-                uid: firebase.auth().currentUser.uid,
-                email: userEmail,
-                name: getDeviceInfo(),
-                status: 'approved', // Auto-approve since we let them in
-                requestedAt: new Date().toISOString(),
-                userAgent: navigator.userAgent
-            });
-            showToast("⚠️ Dispositivo registrado automáticamente", "success");
-        }
-        // If exists, we already unlocked.
-    } catch (e) {
-        console.error("Background device registration failed:", e);
-        // User is already inside, just log error.
-    }
+    // Listener for Real-time approval
+    db.collection('authorized_devices').doc(myDeviceId)
+        .onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.status === 'approved') {
+                    // UNLOCK!
+                    unlockApp(userEmail, true);
+                } else if (data.status === 'blocked') {
+                    if (lockStatus) {
+                        lockStatus.innerHTML = "⛔ <b>ACCESO BLOQUEADO</b><br>Este dispositivo ha sido rechazado.";
+                        lockStatus.style.background = "#ffcdd2";
+                        lockStatus.style.color = "#c62828";
+                        lockStatus.style.border = "1px solid #e57373";
+                    }
+                } else {
+                    // Pending
+                    if (lockStatus) {
+                        lockStatus.innerHTML = "⏳ <b>PENDIENTE DE APROBACIÓN</b><br>Contacte a la Dirección para activar este equipo.";
+                        lockStatus.style.background = "#FFF3CD";
+                        lockStatus.style.color = "#856404";
+                    }
+                }
+            } else {
+                // Register new device as PENDING
+                db.collection('authorized_devices').doc(myDeviceId).set({
+                    id: myDeviceId,
+                    uid: firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'unknown',
+                    email: userEmail,
+                    name: getDeviceInfo(),
+                    status: 'pending', // LOCKED BY DEFAULT
+                    requestedAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent
+                }).then(() => {
+                    if (lockStatus) lockStatus.innerText = "🚀 Solicitud enviada. Esperando aprobación...";
+                }).catch(e => console.error("Error creating device request:", e));
+            }
+        }, (error) => {
+            console.error("Device listener error:", error);
+            showToast("Error de conexión: " + error.message, "error");
+        });
 }
 
 function processAdminEmail(email) {
@@ -1541,7 +1558,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.3");
+    console.log("DOM LOADED v26.4");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
