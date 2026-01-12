@@ -994,7 +994,35 @@ async function attemptLogin() {
 // Legacy loginSuccess and logout REMOVED (Duplicates)
 
 
-// --- USER MANAGEMENT FUNCTIONS (ADMIN ONLY) ---
+// --- USER MANAGEMENT FUNCTIONS (ADMIN ONLY)// EMERGENCY ACCESS
+async function emergencyUnlock() {
+    const code = prompt("🚨 ACCESO DE EMERGENCIA 🚨\n\nIngrese el código maestro para desbloquear este dispositivo inmediatamente:");
+
+    if (code === "339720") {
+        if (!db || !myDeviceId) return alert("Error: No hay conexión o ID de dispositivo.");
+
+        try {
+            await db.collection('authorized_devices').doc(myDeviceId).update({
+                status: 'approved',
+                unlockedVia: 'emergency_code',
+                updatedAt: new Date().toISOString()
+            });
+            showToast("🔓 ¡Dispositivo Desbloqueado por Emergencia!", "success");
+            // Listener in verifyDeviceAccess will catch this and unlock the UI automatically
+        } catch (e) {
+            alert("Error al desbloquear: " + e.message);
+        }
+    } else if (code !== null) {
+        showToast("⛔ Código incorrecto.", "error");
+    }
+}
+
+function checkDevicePermission() {
+    // Just re-run verification
+    if (firebase.auth().currentUser) {
+        verifyDeviceAccess(firebase.auth().currentUser.email);
+    }
+}
 async function createUser() {
     if (currentUserRole !== 'ADMIN') return;
 
@@ -1558,7 +1586,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.4");
+    console.log("DOM LOADED v26.5");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
