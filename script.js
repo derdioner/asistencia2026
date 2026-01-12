@@ -1542,12 +1542,7 @@ function loadDeviceRequests() {
     try {
         // alert("Cargando lista de dispositivos..."); // Uncomment if needed
 
-        // DIAGNOSTIC INFO
-        if (document.getElementById('debugDeviceId')) document.getElementById('debugDeviceId').innerText = myDeviceId || "NULL";
-        const user = firebase.auth().currentUser;
-        if (document.getElementById('debugUserEmail')) document.getElementById('debugUserEmail').innerText = user ? user.email : "NO LOGIN";
-        if (document.getElementById('debugAuthStatus')) document.getElementById('debugAuthStatus').innerText = user ? "OK (UID: " + user.uid + ")" : "FAIL";
-        if (document.getElementById('debugDBStatus')) document.getElementById('debugDBStatus').innerText = db ? "CONNECTED" : "DISCONNECTED";
+        // DIAGNOSTIC INFO REMOVED
 
         if (!db) return;
         const pendingList = document.getElementById('pendingDevicesList');
@@ -1681,7 +1676,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.20");
+    console.log("DOM LOADED v26.21");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today

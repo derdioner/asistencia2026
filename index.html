@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.20">
+    <link rel="stylesheet" href="style.css?v=26.21">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.20">
+    <link rel="manifest" href="manifest.json?v=26.21">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -459,30 +459,14 @@
 
         <!-- DEVICES TAB (MOVED HERE) -->
         <div id="devices" class="tab-content">
-            <h1 style="background:#e0f7fa; padding:10px; border:2px solid #006064; color:#006064; text-align:center;">
-                ✅ ACTUALIZACIÓN v26.20 (FIX LOGOUT ERROR)
-            </h1>
+
             <h2>📱 Control de Dispositivos</h2>
             <p style="text-align:center; color:#666; font-size:13px; margin-bottom:15px;">
                 Aprueba o bloquea los dispositivos que intentan acceder al sistema.
             <h3 style="margin-top:20px; border-bottom: 2px solid #eee; padding-bottom:5px;">⏳ Solicitudes Pendientes
             </h3>
 
-            <!-- DEBUG PANEL START -->
-            <div id="debugPanel"
-                style="background:#FFEBEE; border:2px dashed red; padding:10px; margin:10px 0; font-size:12px; font-family:monospace; color:#333;">
-                <p><strong>🛠️ PANEL DE DIAGNÓSTICO (Temporal)</strong></p>
-                <p>MyDeviceId: <span id="debugDeviceId">...</span></p>
-                <p>User Email: <span id="debugUserEmail">...</span></p>
-                <p>Firebase Auth: <span id="debugAuthStatus">...</span></p>
-                <p>Firestore DB: <span id="debugDBStatus">...</span></p>
-                <p>Query Result: <span id="debugQueryResult">...</span></p>
-                <button onclick="debugForceRegister()" style="margin-top:5px; background:red; color:white;">🚨
-                    FORZAR REGISTRO AHORA</button>
-                <button onclick="loadDeviceRequests()" style="margin-top:5px; background:blue; color:white;">🔄
-                    RECARGAR LISTA</button>
-            </div>
-            <!-- DEBUG PANEL END -->
+
             <div class="table-container">
                 <table>
                     <thead>
@@ -562,7 +546,7 @@
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.20 (Estable)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.21 (Estable)</span>
         </footer>
     </div>
 
@@ -596,7 +580,7 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.20"></script>
+    <script src="script.js?v=26.21"></script>
 </body>
 
 </html>
