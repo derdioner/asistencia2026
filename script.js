@@ -1420,9 +1420,13 @@ function verifyDeviceAccess(userEmail) {
 
                     // 1. Whitelist Super Admins (Prevent Lockout - SUPREME OVERRIDE)
                     // Check this BEFORE DB query to avoid being blocked by DB errors
+                    const cleanEmail = email ? email.trim().toLowerCase() : '';
+                    console.log("Checking Whitelist for: '" + cleanEmail + "' (Original: '" + email + "')");
+
                     const superAdmins = ['derda@genaro.edu.pe', 'admin@genaro.edu.pe'];
-                    if (superAdmins.includes(email.toLowerCase())) {
-                        console.log("Super Admin Identified via Whitelist: " + email);
+                    if (superAdmins.includes(cleanEmail)) {
+                        // alert("DEBUG: ADMIN SUPREMO DETECTADO: " + cleanEmail); // Visual Check
+                        console.log("Super Admin Identified via Whitelist: " + cleanEmail);
                         unlockApp(userEmail, 'ADMIN');
                         return; // EXIT EARLY - Skip DB check
                     }
@@ -1675,7 +1679,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.15");
+    console.log("DOM LOADED v26.16");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
