@@ -1501,20 +1501,18 @@ function unlockApp(name, role) {
 
     // RESET VISIBILITY
     document.getElementById('tab-devices').style.display = 'none';
-    document.getElementById('tab-report2').style.display = 'none'; // Personal/Roles tab
-    document.getElementById('tab-generator').style.display = 'none'; // Generator tab (New requirement)
+    if (document.getElementById('tab-roles')) document.getElementById('tab-roles').style.display = 'none';
+    document.getElementById('tab-generator').style.display = 'none';
 
     // ADMIN PERMISSIONS
     if (role === 'ADMIN' || role === true) {
         document.getElementById('tab-devices').style.display = 'block';
-        document.getElementById('tab-report2').style.display = 'block';
+        if (document.getElementById('tab-roles')) document.getElementById('tab-roles').style.display = 'block';
         document.getElementById('tab-generator').style.display = 'block';
         currentUserRole = 'ADMIN';
     }
 
     // AUXILIAR can see Scanner, Reports, Incidents (Default visible)
-    // They are hidden only if we explicitly hide them, which we don't.
-    // So just hiding 'devices' and 'report2' covers it.
 
     setTimeout(subscribeToStudents, 500);
 }
@@ -1679,7 +1677,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.16");
+    console.log("DOM LOADED v26.18");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
