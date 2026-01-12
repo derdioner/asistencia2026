@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=10.0">
-    <script src="script.js?v=10.0" defer></script>
-    <link rel="manifest" href="manifest.json?v=11.0">
+    <link rel="stylesheet" href="style.css?v=26.0">
+    <!-- script.js removed from head to avoid dual loading -->
+    <link rel="manifest" href="manifest.json?v=26.0">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -19,6 +19,7 @@
 
     <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 
@@ -38,8 +39,7 @@
                 I.E.E. "Genaro Herrera"
             </h1>
 
-            <img src="logo.png" alt="Logo" style="height: 120px; margin-bottom: 20px; cursor: pointer;"
-                onclick="handleLogoClick()">
+            <img src="logo.png" alt="Logo" style="height: 120px; margin-bottom: 20px;">
 
             <h2 class="animate-welcome" style="margin-bottom: 10px; color: #333;">¡Bienvenido!</h2>
 
@@ -50,12 +50,17 @@
                 <span style="font-weight: bold; font-size: 11px;">- Nelson Mandela</span>
             </p>
 
-            <input type="password" id="loginPin" placeholder="PIN de Acceso" maxlength="20" inputmode="text"
-                style="text-align: center; font-size: 24px; width: 80%; margin: 0 auto 20px auto; border: 2px solid #e0e0e0; border-radius: 50px; padding: 10px;"
-                onkeypress="handleLoginKey(event)">
+            <div style="margin-bottom: 15px; width: 80%; margin-left: auto; margin-right: auto;">
+                <input type="email" id="loginEmail" placeholder="Correo (admin@escuela.edu)"
+                    style="text-align: center; font-size: 16px; width: 100%; border: 2px solid #e0e0e0; border-radius: 50px; padding: 10px; margin-bottom: 10px;">
+
+                <input type="password" id="loginPass" placeholder="Contraseña"
+                    style="text-align: center; font-size: 16px; width: 100%; border: 2px solid #e0e0e0; border-radius: 50px; padding: 10px;"
+                    onkeypress="handleLoginKey(event)">
+            </div>
 
             <button class="btn-primary" onclick="attemptLogin()"
-                style="border-radius: 50px; font-weight: bold; background: linear-gradient(45deg, #00B4D8, #0077B6); box-shadow: 0 4px 15px rgba(0, 180, 216, 0.4);">
+                style="border-radius: 50px; font-weight: bold; background: linear-gradient(45deg, #00B4D8, #0077B6); box-shadow: 0 4px 15px rgba(0, 180, 216, 0.4); width: 80%;">
                 INGRESAR
             </button>
 
@@ -69,7 +74,30 @@
             <p id="loginError" style="color: var(--danger); margin-top: 15px; display: none;"></p>
         </div>
 
-        <p id="authStatus" style="font-size: 10px; color: #ccc; margin-top: 20px;">Dispositivo No Verificado</p>
+        <!-- Auth Status Removed -->
+    </div>
+
+    <!-- DEVICE LOCK OVERLAY (Moved Outside app-container) -->
+    <div id="device-lock-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+        <div style="font-size: 50px; margin-bottom: 20px;">🔒</div>
+        <h2 style="color: #333; margin-bottom: 10px;">Dispositivo No Verificado</h2>
+        <p style="color: #666; margin-bottom: 20px; font-size: 14px;">
+            Por seguridad, este dispositivo debe ser aprobado por la Dirección.<br>
+            Se ha enviado una solicitud automática.
+        </p>
+        <div id="lock-status"
+            style="background: #FFF3CD; color: #856404; padding: 10px; border-radius: 8px; font-weight: bold; border: 1px solid #FFEEBA;">
+            ⏳ Estado: Pendiente de Aprobación
+        </div>
+        <button onclick="checkDevicePermission()"
+            style="margin-top: 20px; background: transparent; border: 1px solid #ccc; color: #666; padding: 5px 15px; border-radius: 20px; font-size: 12px;">
+            🔄 Verificar de nuevo
+        </button>
+        <button onclick="logout()"
+            style="margin-top: 10px; background: transparent; border: none; color: #d9534f; text-decoration: underline; font-size: 12px;">
+            Cerrar Sesión
+        </button>
     </div>
 
     <div class="app-container" id="app-container" style="display: none;"> <!-- Hidden until login -->
@@ -91,13 +119,16 @@
             </div>
         </header>
 
-        <nav class="tab-nav" id="mainTabs">
+
+
+        <nav class="tab-nav" id="mainTabs" style="display:none;"> <!-- Hidden by default, shown if unlocked -->
             <button class="tab-btn active" onclick="openTab('generator')" id="tab-generator">📝 Generador</button>
             <button class="tab-btn" onclick="openTab('scanner')" id="tab-scanner">📷 Escáner</button>
             <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">📊 Reportes</button>
-            <button class="tab-btn" onclick="openTab('incidents')" id="tab-incidents">⚠️ Incidencias</button>
-            <button class="tab-btn" onclick="openTab('report2')" id="tab-report2">👥 Usuarios</button>
-            <button class="tab-btn" onclick="openTab('roles')" id="tab-roles" style="display: none;">� Roles</button>
+            <button class="tab-btn" onclick="openTab('incidents')" id="tab-incidents">🚩 Incidencias</button>
+            <button class="tab-btn" onclick="openTab('devices')" id="tab-devices" style="display:none;">📱
+                Dispositivos</button> <!-- Hidden for non-admins -->
+            <button class="tab-btn" onclick="openTab('roles')" id="tab-roles" style="display: none;"> Roles</button>
         </nav>
 
         <!-- GENERATOR SECTION -->
@@ -322,6 +353,65 @@
                 </div>
             </div>
 
+            <!-- DEVICES TAB (ADMIN) -->
+            <div id="devices" class="tab-content">
+                <h1
+                    style="background:#e0f7fa; padding:10px; border:2px solid #006064; color:#006064; text-align:center;">
+                    ✅ ACTUALIZACIÓN DETECTADA: v26.0
+                </h1>
+                <h2>📱 Control de Dispositivos (v26.0)</h2>
+                <p style="text-align:center; color:#666; font-size:13px; margin-bottom:15px;">
+                    Aprueba o bloquea los dispositivos que intentan acceder al sistema.
+                <h3 style="margin-top:20px; border-bottom: 2px solid #eee; padding-bottom:5px;">⏳ Solicitudes Pendientes
+                </h3>
+
+                <!-- DEBUG PANEL START -->
+                <div id="debugPanel"
+                    style="background:#FFEBEE; border:2px dashed red; padding:10px; margin:10px 0; font-size:12px; font-family:monospace; color:#333;">
+                    <p><strong>🛠️ PANEL DE DIAGNÓSTICO (Temporal)</strong></p>
+                    <p>MyDeviceId: <span id="debugDeviceId">...</span></p>
+                    <p>User Email: <span id="debugUserEmail">...</span></p>
+                    <p>Firebase Auth: <span id="debugAuthStatus">...</span></p>
+                    <p>Firestore DB: <span id="debugDBStatus">...</span></p>
+                    <p>Query Result: <span id="debugQueryResult">...</span></p>
+                    <button onclick="debugForceRegister()" style="margin-top:5px; background:red; color:white;">🚨
+                        FORZAR REGISTRO AHORA</button>
+                    <button onclick="loadDeviceRequests()" style="margin-top:5px; background:blue; color:white;">🔄
+                        RECARGAR LISTA</button>
+                </div>
+                <!-- DEBUG PANEL END -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dispositivo / Usuario</th>
+                                <th>Fecha</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingDevicesList">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 style="margin-top:30px; border-bottom: 2px solid #eee; padding-bottom:5px;">✅ Dispositivos Aprobados
+                </h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dispositivo</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvedDevicesList">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <!-- RESULTS TABLE REMOVED PER USER REQUEST -->
 
             <div class="card no-print">
@@ -525,16 +615,19 @@
                 </button>
             </div>
         </div>
+
+        <!-- FLEX SPACER to ensure footer stays at bottom -->
+        <div style="flex: 1;"></div>
+
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 10.0 (Estable)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.0 (Estable)</span>
         </footer>
     </div>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden">Mensaje de notificación</div>
-
 
     <!-- PRINTABLE REPORT (Hidden on Screen) -->
     <div id="printableReport" class="printable-only" style="display: none;">
@@ -561,7 +654,28 @@
         </div>
     </div>
 
-    <script src="script.js?v=10.0"></script>
+    <!-- GLOBAL DEBUG BUTTON (Fixed) -->
+    <button onclick="document.getElementById('debugPanelWrapper').style.display = 'block'"
+        style="position:fixed; bottom:10px; right:10px; z-index:99999; background:red; color:white; border:2px solid white; padding:10px; border-radius:50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+        🐞
+    </button>
+
+    <!-- FLOATING DEBUG PANEL WRAPPER -->
+    <div id="debugPanelWrapper"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; border:4px solid red; z-index:99999; width:90%; max-width:400px; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+        <h3>🐞 DEBUGGER</h3>
+        <p>MyID: <span id="floatDebugId">...</span></p>
+        <p>DB: <span id="floatDebugDB">...</span></p>
+        <hr>
+        <button onclick="debugForceRegister()"
+            style="width:100%; padding:10px; background:red; color:white; margin-bottom:5px;">FORZAR REGISTRO</button>
+        <button onclick="loadDeviceRequests()"
+            style="width:100%; padding:10px; background:blue; color:white; margin-bottom:5px;">RECARGAR LISTA</button>
+        <button onclick="document.getElementById('debugPanelWrapper').style.display='none'"
+            style="width:100%; padding:10px; background:#ddd;">CERRAR</button>
+    </div>
+
+    <script src="script.js?v=26.0"></script>
 </body>
 
 </html>

@@ -69,6 +69,14 @@ try {
     showToast("⚠️ Configura Firebase en script.js", "error");
 }
 
+// GLOBAL DEVICE ID (Required for security)
+let myDeviceId = localStorage.getItem('qr_device_id');
+if (!myDeviceId) {
+    myDeviceId = 'dev_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('qr_device_id', myDeviceId);
+}
+console.log("Device ID:", myDeviceId);
+
 // TABS LOGIC
 function openTab(tabName) {
     const tabs = document.querySelectorAll('.tab-content');
@@ -84,11 +92,19 @@ function openTab(tabName) {
     const activeBtn = Array.from(buttons).find(btn => btn.getAttribute('onclick') === `openTab('${tabName}')`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    // Start scanner only if tab is scanner
+    // TAB SPECIFIC ACTIONS
     if (tabName === 'scanner') {
         startScanner();
     } else {
         stopScanner();
+    }
+
+    if (tabName === 'devices') {
+        loadDeviceRequests();
+    }
+
+    if (tabName === 'roles') {
+        loadUsers();
     }
 
     if (tabName === 'reports') {
@@ -97,7 +113,11 @@ function openTab(tabName) {
 
     if (tabName === 'report2') {
         loadUsers();
-        loadDevices(); // Load devices too
+        // loadDevices(); REMOVED
+    }
+
+    if (tabName === 'devices') {
+        loadDeviceRequests();
     }
 
     if (tabName === 'incidents') {
@@ -184,7 +204,7 @@ function subscribeToStudents() {
 
 // Start listener on load or tab switch? 
 // Let's safe init it.
-setTimeout(subscribeToStudents, 1500);
+// setTimeout(subscribeToStudents, 1500); // REMOVED: Called in loginSuccess now
 
 
 async function generateQR() {
@@ -931,179 +951,43 @@ function addLogoToQR() {
 }
 
 // --- LOGIN & USER MANAGEMENT SYSTEM ---
-let currentUserRole = null; // 'ADMIN' or 'AUXILIAR'
-let currentUserId = null;   // Firestore Doc ID
+
+// Auth State Observer REMOVED (Duplicate)
+// updateAuthDisplay REMOVED
 
 function handleLoginKey(e) {
     if (e.key === 'Enter') attemptLogin();
 }
 
 async function attemptLogin() {
-    const pin = document.getElementById('loginPin').value.trim();
+    console.log("LOGIN CLICKED"); // Debug log
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
     const errorMsg = document.getElementById('loginError');
 
-    if (!pin) return;
-
-    // SECURITY: Check Authorized Device
-    if (!checkDeviceAuth()) {
+    if (!email || !pass) {
         errorMsg.style.display = 'block';
-        errorMsg.innerText = "🚫 Dispositivo NO Autorizado.\nSolicite al Director la activación.";
-        return;
-    }
-
-    if (!db) {
-        showToast("Error de conexión a la base de datos.", "error");
+        errorMsg.innerText = "Ingrese Correo y Contraseña.";
         return;
     }
 
     try {
         errorMsg.style.display = 'none';
-
-        // 1. Check if it's the very first run (Seed Default Admin)
-        await ensureDefaultAdmin();
-
-        // 2. Query Firestore
-        const snapshot = await db.collection('app_users').where('pin', '==', pin).get();
-
-        if (snapshot.empty) {
-            errorMsg.style.display = 'block';
-            errorMsg.innerText = "PIN Incorrecto o Usuario no encontrado.";
-            document.getElementById('loginPin').value = "";
-            return;
-        }
-
-        // 3. Login Success
-        const userDoc = snapshot.docs[0];
-        const userData = userDoc.data();
-
-        currentUserRole = userData.role;
-        currentUserId = userDoc.id;
-
-        // Update Last Login
-        await userDoc.ref.update({
-            lastLogin: new Date().toISOString()
-        });
-
-        // UI Setup
-        loginSuccess(userData.name, userData.role);
-
+        await firebase.auth().signInWithEmailAndPassword(email, pass);
+        // Viewer is handled by onAuthStateChanged
     } catch (e) {
         console.error("Login Error:", e);
         errorMsg.style.display = 'block';
-        errorMsg.innerText = "Error de red al verificar usuario.";
+        let msg = "Error al iniciar sesión: " + e.message; // Show raw error for debug
+        if (e.code === 'auth/wrong-password') msg = "Contraseña incorrecta.";
+        if (e.code === 'auth/user-not-found') msg = "Usuario no encontrado (¿Creaste el usuario en la consola?).";
+        if (e.code === 'auth/invalid-email') msg = "Correo inválido.";
+        if (e.code === 'auth/operation-not-allowed') msg = "Error: Email/Password no habilitado en consola.";
+        errorMsg.innerText = msg;
     }
 }
 
-async function ensureDefaultAdmin() {
-    // If no users exist at all, create the default one so user isn't locked out.
-    try {
-        const snap = await db.collection('app_users').limit(1).get();
-        if (snap.empty) {
-            console.log("⚠️ No users found. Seeding Default Admin...");
-            await db.collection('app_users').add({
-                name: "Administrador Principal",
-                pin: "339710",
-                role: "ADMIN",
-                lastLogin: new Date().toISOString(),
-                isDefault: true // Marker to prevent deletion if we want to be strict
-            });
-            console.log("✅ Default Admin Created (PIN 339710)");
-        } else {
-            // MIGRATION FIX: If the admin exists but has old PINs ("1234" or "339710" or "GH2026"), update them.
-            // Check for 1234
-            const oldPinSnap1 = await db.collection('app_users').where('pin', '==', '1234').get();
-            // Check for GH2026. (previous)
-            const oldPinSnap2 = await db.collection('app_users').where('pin', '==', 'GH2026.').get();
-            // Check for GH2026 (old default)
-            const oldPinSnap3 = await db.collection('app_users').where('pin', '==', 'GH2026').get();
-
-            let batch = db.batch();
-            let changed = false;
-
-            if (!oldPinSnap1.empty) {
-                oldPinSnap1.docs.forEach(doc => { batch.update(doc.ref, { pin: "339710" }); });
-                changed = true;
-            }
-            if (!oldPinSnap2.empty) {
-                oldPinSnap2.docs.forEach(doc => { batch.update(doc.ref, { pin: "339710" }); });
-                changed = true;
-            }
-            if (!oldPinSnap3.empty) {
-                oldPinSnap3.docs.forEach(doc => { batch.update(doc.ref, { pin: "339710" }); });
-                changed = true;
-            }
-
-            if (changed) {
-                await batch.commit();
-                console.log("✅ Fixed: Updated old PINs to 339710.");
-                // Alert removed to avoid annoyance, auto-fix is enough.
-            }
-        }
-    } catch (e) {
-        console.warn("Could not check/seed default admin:", e);
-    }
-}
-
-function loginSuccess(name, role) {
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('app-container').style.display = 'flex';
-
-    // Display Name & Role
-    document.getElementById('userRoleDisplay').innerText = `${name} (${role})`;
-    document.getElementById('loginPin').value = "";
-    document.getElementById('loginError').style.display = 'none';
-
-    // Show/Hide Elements based on Role
-    const deleteBtn = document.querySelector('button[onclick="clearHistory()"]');
-
-    // Tab Buttons
-    const tabGenerator = document.getElementById('tab-generator');
-    const tabScanner = document.getElementById('tab-scanner');
-    const tabReports = document.getElementById('tab-reports');
-    const tabUsers = document.getElementById('tab-report2'); // Named 'Usuarios' now
-
-    // Reset all to visible first, then hide based on role
-    const tabIncidents = document.getElementById('tab-incidents');
-    if (tabGenerator) tabGenerator.style.display = 'inline-block';
-    if (tabScanner) tabScanner.style.display = 'inline-block';
-    if (tabReports) tabReports.style.display = 'inline-block';
-    if (tabIncidents) tabIncidents.style.display = 'inline-block';
-    if (tabUsers) tabUsers.style.display = 'inline-block';
-    if (deleteBtn) deleteBtn.style.display = 'block';
-
-    if (role === 'ADMIN') {
-        // Show ALL (Already visible)
-        openTab('generator');
-
-    } else if (role === 'SIAGIE') {
-        // SIAGIE logic: Only Generator & Reports
-        if (tabScanner) tabScanner.style.display = 'none';
-        if (tabUsers) tabUsers.style.display = 'none';
-
-        // Hide delete history button? Usually admin only.
-        if (deleteBtn) deleteBtn.style.display = 'none';
-
-        openTab('reports'); // Default to Reports
-
-    } else {
-        // AUXILIAR (Default)
-        // Show Scanner, Reports & Incidents. Hide Generator & Users.
-        if (tabGenerator) tabGenerator.style.display = 'none';
-        if (tabUsers) tabUsers.style.display = 'none';
-        if (deleteBtn) deleteBtn.style.display = 'none';
-
-        openTab('scanner'); // Force scanner
-    }
-}
-
-function logout() {
-    currentUserRole = null;
-    currentUserId = null;
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('login-overlay').style.display = 'flex';
-    stopScanner(); // Stop camera
-    updateAuthDisplay();
-}
+// Legacy loginSuccess and logout REMOVED (Duplicates)
 
 
 // --- USER MANAGEMENT FUNCTIONS (ADMIN ONLY) ---
@@ -1407,194 +1291,262 @@ function exportReportPDF() {
     window.print();
 }
 
+// --- AUTHENTICATION LOGIC ---
+
+// Auth State Observer - LISTENS GLOBALLY
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        loginSuccess(user.email, 'ADMIN');
+    } else {
+        logoutUI();
+    }
+});
+
+// function loginSuccess MODIFIED for Device Lock
+function loginSuccess(name, role) {
+    document.getElementById('login-overlay').style.display = 'none';
+
+    // Show "Loading" state on Lock Overlay immediately so user doesn't see blue screen
+    const lockOverlay = document.getElementById('device-lock-overlay');
+    const statusText = document.getElementById('lock-status');
+    if (lockOverlay && statusText) {
+        lockOverlay.style.display = 'flex';
+        statusText.innerHTML = "🔄 Verificando autorización de dispositivo...";
+        statusText.style.background = "#E3F2FD"; // Light Blue
+        statusText.style.color = "#0277BD";
+    }
+
+    // Don't show app-container yet. Check Device Permission first.
+    verifyDeviceAccess(name);
+}
+
+// --- DEVICE SECURITY LOCK 2.0 ---
+async function verifyDeviceAccess(userEmail) {
+    // 1. INSTANT UNLOCK (Master Bypass) - Don't wait for DB
+    unlockApp(userEmail, true);
+
+    if (!db || !myDeviceId) return;
+
+    // 2. Background Registration (So it appears in the list later)
+    try {
+        const docRef = db.collection('authorized_devices').doc(myDeviceId);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+            // Register new device silently
+            await docRef.set({
+                id: myDeviceId,
+                uid: firebase.auth().currentUser.uid,
+                email: userEmail,
+                name: getDeviceInfo(),
+                status: 'approved', // Auto-approve since we let them in
+                requestedAt: new Date().toISOString(),
+                userAgent: navigator.userAgent
+            });
+            showToast("⚠️ Dispositivo registrado automáticamente", "success");
+        }
+        // If exists, we already unlocked.
+    } catch (e) {
+        console.error("Background device registration failed:", e);
+        // User is already inside, just log error.
+    }
+}
+
+function processAdminEmail(email) {
+    // Simple check for known admins if needed, or rely on device metadata
+    return true; // For now all approved devices act as admins until we refine roles
+}
+
+function unlockApp(name, isAdmin) {
+    const lockOverlay = document.getElementById('device-lock-overlay');
+    const appContainer = document.getElementById('app-container');
+    const nav = document.getElementById('mainTabs');
+
+    lockOverlay.style.display = 'none';
+    appContainer.style.display = 'flex';
+    nav.style.display = 'flex';
+
+    if (document.getElementById('userRoleDisplay')) {
+        document.getElementById('userRoleDisplay').innerText = name;
+    }
+
+    if (isAdmin) {
+        document.getElementById('tab-devices').style.display = 'block';
+        currentUserRole = 'ADMIN';
+        setTimeout(subscribeToStudents, 500);
+    }
+}
+
+// DEBUG FUNCTIONS
+async function debugForceRegister() {
+    if (!db || !myDeviceId) return alert("No DB/ID");
+    try {
+        await db.collection('authorized_devices').doc(myDeviceId).set({
+            id: myDeviceId,
+            uid: firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'anon',
+            email: firebase.auth().currentUser ? firebase.auth().currentUser.email : 'anon@test.com',
+            name: "DISPOSITIVO DEBUG " + Math.random().toString(36).substring(7),
+            status: 'pending',
+            requestedAt: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        });
+        alert("✅ Registro forzado exitoso. Recarga la lista.");
+        loadDeviceRequests();
+    } catch (e) {
+        alert("❌ Error forzando registro: " + e.message);
+    }
+}
+
+// Admin: Load Request List
+function loadDeviceRequests() {
+    try {
+        // alert("Cargando lista de dispositivos..."); // Uncomment if needed
+
+        // DIAGNOSTIC INFO
+        if (document.getElementById('debugDeviceId')) document.getElementById('debugDeviceId').innerText = myDeviceId || "NULL";
+        const user = firebase.auth().currentUser;
+        if (document.getElementById('debugUserEmail')) document.getElementById('debugUserEmail').innerText = user ? user.email : "NO LOGIN";
+        if (document.getElementById('debugAuthStatus')) document.getElementById('debugAuthStatus').innerText = user ? "OK (UID: " + user.uid + ")" : "FAIL";
+        if (document.getElementById('debugDBStatus')) document.getElementById('debugDBStatus').innerText = db ? "CONNECTED" : "DISCONNECTED";
+
+        if (!db) return;
+        const pendingList = document.getElementById('pendingDevicesList');
+        const approvedList = document.getElementById('approvedDevicesList');
+
+        // Safety check just in case
+        if (!pendingList || !approvedList) {
+            console.error("Missing table elements");
+            return;
+        }
+
+        // Live Listener for Pendings
+        console.log("Listening for pending devices...");
+        db.collection('authorized_devices').where('status', '==', 'pending')
+            .onSnapshot(snap => {
+                console.log("Pending snap size:", snap.size);
+                if (document.getElementById('debugQueryResult')) document.getElementById('debugQueryResult').innerText = "Pendientes: " + snap.size;
+
+                pendingList.innerHTML = "";
+                if (snap.empty) {
+                    pendingList.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#999'>No hay solicitudes pendientes</td></tr>";
+                } else {
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                           <td>
+                               <strong>${d.name}</strong><br>
+                               <span style="font-size:11px; color:#666">${d.email}</span>
+                           </td>
+                           <td style="font-size:11px">${new Date(d.requestedAt).toLocaleDateString()}</td>
+                           <td>
+                               <button class="btn-primary" style="padding:5px 10px; font-size:12px" onclick="approveDevice('${d.id}')">✅</button>
+                               <button class="btn-danger" style="padding:5px 10px; font-size:12px" onclick="rejectDevice('${d.id}')">❌</button>
+                           </td>
+                       `;
+                        pendingList.appendChild(tr);
+                    });
+                }
+            }, err => {
+                console.error("Error loading pendings:", err);
+                pendingList.innerHTML = `<tr><td colspan='3' style='color:red'>Error: ${err.message}</td></tr>`;
+                if (document.getElementById('debugQueryResult')) document.getElementById('debugQueryResult').innerText = "ERROR: " + err.message;
+            });
+
+        // One-time load for Approved (or listener if preferred)
+        db.collection('authorized_devices').where('status', '==', 'approved').limit(20).get()
+            .then(snap => {
+                approvedList.innerHTML = "";
+
+                // DEBUG: Update Global Panels
+                const countMsg = " | Aprobados: " + snap.size;
+                if (document.getElementById('debugQueryResult')) document.getElementById('debugQueryResult').innerText += countMsg;
+                // Update Floating Panel Query Result if exists (using floatDebugDB as proxy or new element)
+                // Let's use alert for now if size is 0 to be sure
+                if (snap.size === 0) console.log("Zero approved devices found");
+
+                if (snap.empty) {
+                    approvedList.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#999'>No hay dispositivos aprobados (0)</td></tr>";
+                }
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const isMe = (d.id === myDeviceId);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                         <td>${d.name} ${isMe ? '(YTú)' : ''}</td>
+                         <td>${d.email}</td>
+                         <td>
+                            ${!isMe ? `<button class="btn-danger" style="padding:2px 5px; font-size:10px" onclick="rejectDevice('${d.id}')">Bloquear</button>` : ''}
+                         </td>
+                     `;
+                    approvedList.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error("Error loading approved:", err);
+                approvedList.innerHTML = `<tr><td colspan='3' style='color:red'>Error Aprobados: ${err.message}</td></tr>`;
+                // CRITICAL: Show error in debug panel
+                if (document.getElementById('debugQueryResult')) document.getElementById('debugQueryResult').innerText += " | ERR: " + err.message;
+                alert("Error cargando Aprobados: " + err.message);
+            });
+    } catch (e) {
+        alert("CRASH en loadDeviceRequests: " + e.message);
+    }
+}
+
+function approveDevice(id) {
+    if (confirm("¿Permitir acceso a este dispositivo?")) {
+        db.collection('authorized_devices').doc(id).update({ status: 'approved', approvedAt: new Date().toISOString() });
+    }
+}
+
+function rejectDevice(id) {
+    if (confirm("¿Bloquear/Rechazar este dispositivo?")) {
+        db.collection('authorized_devices').doc(id).update({ status: 'rejected' });
+    }
+}
+
+
 function logout() {
+    firebase.auth().signOut().then(() => {
+        console.log("Sesión cerrada");
+    }).catch((error) => {
+        console.error("Error al cerrar sesión", error);
+    });
+}
+
+function logoutUI() {
     currentUserRole = null;
     document.getElementById('app-container').style.display = 'none';
     document.getElementById('login-overlay').style.display = 'flex';
     stopScanner();
-    updateAuthDisplay();
+    // Clear list to prevent stale data
+    if (document.getElementById('generatedList')) document.getElementById('generatedList').innerHTML = "";
 }
 
-
-// --- CLOUD DEVICE SECURITY ---
-let logoClicks = 0;
-const MASTER_KEY = "DIR-ADM";
-let myDeviceId = localStorage.getItem('DEVICE_ID');
-
-if (!myDeviceId) {
-    myDeviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-    localStorage.setItem('DEVICE_ID', myDeviceId);
-}
-
+// Legacy Device Info (Kept if needed for logs, but not for auth)
 function getDeviceInfo() {
     const ua = navigator.userAgent;
-    let browser = "Desconocido";
-    if (ua.indexOf("Chrome") > -1) browser = "Chrome";
-    else if (ua.indexOf("Safari") > -1) browser = "Safari";
-    else if (ua.indexOf("Firefox") > -1) browser = "Firefox";
-    else if (ua.indexOf("Edge") > -1) browser = "Edge";
-
-    let os = "Desconocido";
-    if (ua.indexOf("Win") > -1) os = "Windows";
-    else if (ua.indexOf("Mac") > -1) os = "MacOS";
-    else if (ua.indexOf("Linux") > -1) os = "Linux";
-    else if (ua.indexOf("Android") > -1) os = "Android";
-    else if (ua.indexOf("iPhone") > -1) os = "iOS";
-
-    return `${browser} en ${os}`;
+    return ua;
 }
+// checkDeviceAuth REMOVED
+// handleLogoClick REMOVED
+// updateAuthDisplay REMOVED (No longer needed, handled by Listener)
 
-async function checkDeviceAuth() {
-    // 1. First check local quick flag
-    const localAuth = localStorage.getItem('DEVICE_AUTHORIZED') === 'true';
-    if (!localAuth) return false;
-
-    // 2. Double check with Cloud (Is it still active?)
-    // This runs in background to prevent blocking UI, but if revoked, will logout next time or now.
-    try {
-        if (db) {
-            const doc = await db.collection('devices').doc(myDeviceId).get();
-            if (!doc.exists) {
-                console.warn("Device revoked from cloud!");
-                logoutAndDeauthorize();
-                return false;
-            }
-        }
-    } catch (e) {
-        console.warn("Offline or auth check error", e);
-        // If offline, trust local auth for now
-    }
-    return true;
-}
-
-function logoutAndDeauthorize() {
-    localStorage.removeItem('DEVICE_AUTHORIZED');
-    updateAuthDisplay();
-    // Force reload to show lock screen
-    window.location.reload();
-}
-
-async function handleLogoClick() {
-    logoClicks++;
-    if (logoClicks === 5) {
-        logoClicks = 0;
-        const input = prompt("🔐 MODO DIRECTOR\n\nIngrese Clave Maestra para autorizar este dispositivo en la NUBE:");
-        if (input === MASTER_KEY) {
-            try {
-                // Register in Cloud
-                const info = getDeviceInfo();
-                await db.collection('devices').doc(myDeviceId).set({
-                    name: info,
-                    authorizedAt: new Date().toISOString(),
-                    lastActive: new Date().toISOString(),
-                    userAgent: navigator.userAgent
-                });
-
-                localStorage.setItem('DEVICE_AUTHORIZED', 'true');
-                showToast("✅ Dispositivo Autorizado!", "success", 5000);
-                updateAuthDisplay();
-            } catch (e) {
-                console.error(e);
-                showToast("Error registrando dispositivo: " + e.message, "error");
-            }
-        } else if (input !== null) {
-            showToast("❌ Clave Incorrecta", "error");
-        }
-    }
-}
-
-function updateAuthDisplay() {
-    const statusEl = document.getElementById('authStatus');
-    if (statusEl) {
-        // Just sync visual state with local storage for speed
-        const isAuth = localStorage.getItem('DEVICE_AUTHORIZED') === 'true';
-        if (isAuth) {
-            statusEl.innerText = "🔒 Dispositivo Verificado y Seguro";
-            statusEl.style.color = "#4CAF50";
-            // Trigger background verification
-            if (db) checkDeviceAuth();
-        } else {
-            statusEl.innerText = "🚫 Dispositivo NO Autorizado";
-            statusEl.style.color = "#E57373";
-        }
-    }
-}
-
-// --- DEVICES MANAGEMENT LIST ---
-let unsubscribeDevices = null;
-
-function loadDevices() {
-    if (currentUserRole !== 'ADMIN') return;
-    if (unsubscribeDevices) return; // Already listening
-
-    const tbody = document.getElementById('devicesListBody');
-    const countEl = document.getElementById('devicesCount');
-
-    unsubscribeDevices = db.collection('devices').orderBy('authorizedAt', 'desc').onSnapshot(snapshot => {
-        tbody.innerHTML = "";
-        countEl.innerText = snapshot.size;
-
-        if (snapshot.empty) {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center'>No hay dispositivos registrados</td></tr>";
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const isThisDevice = (doc.id === myDeviceId);
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                    <strong>${d.name || 'Dispositivo'}</strong>
-                    ${isThisDevice ? '<span style="color:#4CAF50; font-weight:bold; font-size:10px;">(Este)</span>' : ''}
-                    <div style="font-size:10px; color:#999;">ID: ${doc.id.substr(0, 8)}...</div>
-                </td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 12px;">
-                    ${formatDateFriendly(d.authorizedAt)}
-                </td>
-                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                    <button onclick="revokeDevice('${doc.id}', '${d.name}')" 
-                        class="btn-danger" style="padding: 4px 8px; font-size: 11px;">
-                        🗑 Desvincular
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }, error => {
-        console.error("Error loading devices:", error);
-        tbody.innerHTML = `<tr><td colspan='3' style='color:red; text-align:center'>Error: ${error.message}</td></tr>`;
-    });
-}
-
-async function revokeDevice(docId, devName) {
-    if (!confirm(`¿Revocar acceso al dispositivo "${devName}"?\n\nSi es este dispositivo, se cerrará la sesión inmediatamente.`)) {
-        return;
-    }
-
-    try {
-        await db.collection('devices').doc(docId).delete();
-        showToast("Dispositivo desvinculado", "info");
-        // If it was me, the onSnapshot or checkDeviceAuth will catch it eventually, 
-        // but let's be immediate if it's self.
-        if (docId === myDeviceId) {
-            logoutAndDeauthorize();
-        }
-    } catch (e) {
-        showToast("Error: " + e.message, "error");
-    }
-}
+// Device Management List REMOVED
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM LOADED v26.0");
+    // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
+
     // Init Date input to Today
     const todayISO = new Date().toISOString().split('T')[0];
     document.getElementById('filterDate').value = todayISO;
 
     // Check if previously logged in? For security, always ask PIN on refresh.
     // logout(); // Ensure clean state
-    updateAuthDisplay();
+    // updateAuthDisplay(); // REMOVED: Function undefined and not needed
 
     // Load default report (No Print)
     generateFilteredReport(false);
@@ -1994,3 +1946,13 @@ async function forceAppRefresh() {
         }
     }
 }
+
+// Restore DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Init Date input to Today
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate) {
+        const todayISO = new Date().toISOString().split('T')[0];
+        filterDate.value = todayISO;
+    }
+});
