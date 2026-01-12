@@ -1487,11 +1487,13 @@ function unlockApp(name, role) {
     // RESET VISIBILITY
     document.getElementById('tab-devices').style.display = 'none';
     document.getElementById('tab-report2').style.display = 'none'; // Personal/Roles tab
+    document.getElementById('tab-generator').style.display = 'none'; // Generator tab (New requirement)
 
     // ADMIN PERMISSIONS
     if (role === 'ADMIN' || role === true) {
         document.getElementById('tab-devices').style.display = 'block';
         document.getElementById('tab-report2').style.display = 'block';
+        document.getElementById('tab-generator').style.display = 'block';
         currentUserRole = 'ADMIN';
     }
 
@@ -1662,7 +1664,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.10");
+    console.log("DOM LOADED v26.11");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
