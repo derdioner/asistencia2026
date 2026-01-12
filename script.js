@@ -1415,7 +1415,20 @@ function verifyDeviceAccess(userEmail) {
                 const data = doc.data();
                 if (data.status === 'approved') {
                     // UNLOCK!
-                    unlockApp(userEmail, true);
+                    // Determine Role dynamically
+                    const email = userEmail;
+                    db.collection('app_users').where('email', '==', email).get()
+                        .then(snap => {
+                            let role = 'ADMIN'; // Default fallback for Owner
+                            if (!snap.empty) {
+                                role = snap.docs[0].data().role || 'AUXILIAR';
+                            }
+                            unlockApp(userEmail, role);
+                        })
+                        .catch(err => {
+                            console.error("Role fetch error", err);
+                            unlockApp(userEmail, 'ADMIN'); // Fallback
+                        });
                 } else if (data.status === 'blocked') {
                     if (lockStatus) {
                         lockStatus.innerHTML = "⛔ <b>ACCESO BLOQUEADO</b><br>Este dispositivo ha sido rechazado.";
@@ -1456,7 +1469,7 @@ function processAdminEmail(email) {
     return true; // For now all approved devices act as admins until we refine roles
 }
 
-function unlockApp(name, isAdmin) {
+function unlockApp(name, role) {
     const lockOverlay = document.getElementById('device-lock-overlay');
     const appContainer = document.getElementById('app-container');
     const nav = document.getElementById('mainTabs');
@@ -1466,14 +1479,27 @@ function unlockApp(name, isAdmin) {
     nav.style.display = 'flex';
 
     if (document.getElementById('userRoleDisplay')) {
-        document.getElementById('userRoleDisplay').innerText = name;
+        document.getElementById('userRoleDisplay').innerText = `${name} (${role})`;
     }
 
-    if (isAdmin) {
+    currentUserRole = role;
+
+    // RESET VISIBILITY
+    document.getElementById('tab-devices').style.display = 'none';
+    document.getElementById('tab-report2').style.display = 'none'; // Personal/Roles tab
+
+    // ADMIN PERMISSIONS
+    if (role === 'ADMIN' || role === true) {
         document.getElementById('tab-devices').style.display = 'block';
+        document.getElementById('tab-report2').style.display = 'block';
         currentUserRole = 'ADMIN';
-        setTimeout(subscribeToStudents, 500);
     }
+
+    // AUXILIAR can see Scanner, Reports, Incidents (Default visible)
+    // They are hidden only if we explicitly hide them, which we don't.
+    // So just hiding 'devices' and 'report2' covers it.
+
+    setTimeout(subscribeToStudents, 500);
 }
 
 // DEBUG FUNCTIONS
@@ -1636,7 +1662,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.9");
+    console.log("DOM LOADED v26.10");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today
