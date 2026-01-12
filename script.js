@@ -997,7 +997,54 @@ async function attemptLogin() {
 // Legacy loginSuccess and logout REMOVED (Duplicates)
 
 
-// --- USER MANAGEMENT FUNCTIONS (ADMIN ONLY)// EMERGENCY ACCESS
+// --- USER MANAGEMENT FUNCTIONS (ADMIN ONLY)// --- USER REGISTRATION (SECONDARY APP WORKAROUND) ---
+async function registerNewSystemUser() {
+    const email = document.getElementById('regEmail').value.trim();
+    const pass = document.getElementById('regPass').value.trim();
+    const name = document.getElementById('regName').value.trim();
+    const role = document.getElementById('regRole').value;
+
+    if (!email || !pass || !name) return showToast("Faltan datos obligatorios.", "error");
+    if (pass.length < 6) return showToast("La contraseña debe tener al menos 6 caracteres.", "error");
+
+    try {
+        showToast("⏳ Creando usuario...", "info");
+
+        // 1. Initialize Secondary App to avoid logging out current user
+        const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+
+        // 2. Create User
+        const userCredential = await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
+        const newUser = userCredential.user;
+
+        // 3. Save extra data to Firestore (optional, for role management)
+        // We use the same 'app_users' collection but linking by email/uid
+        await db.collection('app_users').add({
+            name: name,
+            email: email,
+            role: role,
+            uid: newUser.uid,
+            createdAt: new Date().toISOString()
+        });
+
+        // 4. Cleanup
+        await secondaryApp.auth().signOut();
+        secondaryApp.delete();
+
+        showToast(`✅ Usuario creado: ${email}`, "success");
+
+        // Clear Form
+        document.getElementById('regEmail').value = "";
+        document.getElementById('regPass').value = "";
+        document.getElementById('regName').value = "";
+
+    } catch (e) {
+        console.error("Registration Error:", e);
+        showToast("Error: " + e.message, "error");
+    }
+}
+
+// EMERGENCY ACCESS
 async function emergencyUnlock() {
     const code = prompt("🚨 ACCESO DE EMERGENCIA 🚨\n\nIngrese el código maestro para desbloquear este dispositivo inmediatamente:");
 
@@ -1589,7 +1636,7 @@ function getDeviceInfo() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM LOADED v26.7");
+    console.log("DOM LOADED v26.8");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
     // Init Date input to Today

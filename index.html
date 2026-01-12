@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.7">
+    <link rel="stylesheet" href="style.css?v=26.8">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.7">
+    <link rel="manifest" href="manifest.json?v=26.8">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -556,7 +556,7 @@
         <!-- DEVICES TAB (MOVED HERE) -->
         <div id="devices" class="tab-content">
             <h1 style="background:#e0f7fa; padding:10px; border:2px solid #006064; color:#006064; text-align:center;">
-                ✅ ACTUALIZACIÓN v26.7 (LISTO)
+                ✅ ACTUALIZACIÓN v26.8 (REGISTRO USUARIOS)
             </h1>
             <h2>📱 Control de Dispositivos</h2>
             <p style="text-align:center; color:#666; font-size:13px; margin-bottom:15px;">
@@ -589,12 +589,15 @@
                         </tr>
                     </thead>
                     <tbody id="pendingDevicesList">
-                        <!-- Loaded via JS -->
-                    </tbody>
-                </table>
+                        <button onclick="registerNewSystemUser()"
+                            style="width:100%; margin-top:10px; background:#4CAF50; color:white; padding:10px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">
+                            ✨ REGISTRAR USUARIO
+                        </button>
             </div>
 
-            <h3 style="margin-top:30px; border-bottom: 2px solid #eee; padding-bottom:5px;">✅ Dispositivos Aprobados
+            <!-- EXISTING DEVICE LISTS -->
+            <h3 style="margin-top: 30px; color: #d9534f; border-bottom: 2px solid #d9534f; padding-bottom: 5px;">✅
+                Dispositivos Aprobados
             </h3>
             <div class="table-container">
                 <table>
@@ -630,7 +633,7 @@
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.7 (Estable)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.8 (Estable)</span>
         </footer>
     </div>
 
@@ -664,7 +667,7 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.7"></script>
+    <script src="script.js?v=26.8"></script>
 </body>
 
 </html>
