@@ -383,13 +383,26 @@ async function exportGeneratedDatabase() {
         }
 
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Nombre;DNI;Fecha Nacimiento;Grado;Seccion;Telefono Apoderado\n";
+        csvContent += "Nombre;DNI;Fecha Nacimiento;Grado;Seccion;Telefono Apoderado;Fecha Registro\n";
 
         snapshot.forEach(doc => {
             const st = doc.data();
             const safeName = `"${st.n}"`;
             const dob = st.dob || '';
-            csvContent += `${safeName};${st.id};${dob};${st.g};${st.s};${st.p || ''}\n`;
+
+            let regDate = '';
+            if (st.created) {
+                try {
+                    // created is ISO string usually, e.g. "2024-01-01T12:00:00.000Z"
+                    // Let's format it for Excel local time
+                    const d = new Date(st.created);
+                    regDate = d.toLocaleString('es-PE'); // "16/1/2026, 14:00:00"
+                } catch (e) {
+                    regDate = st.created;
+                }
+            }
+
+            csvContent += `${safeName};${st.id};${dob};${st.g};${st.s};${st.p || ''};${regDate}\n`;
         });
 
         downloadCSV(csvContent, "BaseDatos_Alumnos_Cloud.csv");
