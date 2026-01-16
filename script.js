@@ -190,7 +190,7 @@ function subscribeToStudents() {
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const row = document.createElement('tr');
-                row.innerHTML = `<td>${s.n}</td><td>${s.g}°</td><td>"${s.s}"</td>`;
+                row.innerHTML = `<td>${s.n}</td><td>${s.id}</td><td>${s.g}°</td><td>"${s.s}"</td>`;
                 list.appendChild(row);
             });
         }, (error) => {
@@ -208,7 +208,7 @@ function subscribeToStudents() {
                         snap.forEach(doc => {
                             const s = doc.data();
                             const row = document.createElement('tr');
-                            row.innerHTML = `<td>${s.n} (Sin Orden)</td><td>${s.g}°</td><td>"${s.s}"</td>`;
+                            row.innerHTML = `<td>${s.n} (Sin Orden)</td><td>${s.id}</td><td>${s.g}°</td><td>"${s.s}"</td>`;
                             list.appendChild(row);
                         });
                         showToast("⚠️ Mostrando lista desordenada (Fallback)", "info");
