@@ -745,6 +745,7 @@ async function onScanSuccess(decodedText, decodedResult) {
         }
     } catch (e) {
         console.error("Error parsing/saving QR", e);
+        showToast("❌ Error al guardar: " + e.message, "error");
     }
 }
 
@@ -1611,6 +1612,21 @@ function renderChart(puntual, tarde) {
             }
         }
     });
+}
+
+function determineLateness(dateObj) {
+    if (!dateObj) return 'Tardanza';
+    // Logic: Before 8:00 (7:59 or less) -> Puntual
+    const hour = dateObj.getHours();
+    const minute = dateObj.getMinutes();
+    const totalMinutes = hour * 60 + minute;
+
+    // 8:00 AM = 480
+    if (totalMinutes <= 480) {
+        return 'Puntual';
+    } else {
+        return 'Tardanza';
+    }
 }
 
 function exportReportPDF() {
