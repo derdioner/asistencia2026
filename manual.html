@@ -4,60 +4,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual de Usuario - GH Asistencia QR</title>
+    <title>Manual de Usuario | GH Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #0077B6;
             --secondary: #00B4D8;
-            --bg: #f4f7f6;
+            --bg: #f8f9fa;
             --text: #333;
             --white: #ffffff;
+            --accent: #E63946;
+            --success: #2E7D32;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
             line-height: 1.6;
             color: var(--text);
             background-color: var(--bg);
             margin: 0;
-            padding: 20px;
+            padding: 0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1em;
         }
 
         .container {
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 900px;
+            margin: -30px auto 40px;
             background: var(--white);
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            color: var(--primary);
-            text-align: center;
-            border-bottom: 3px solid var(--secondary);
-            padding-bottom: 10px;
-            text-transform: uppercase;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            position: relative;
         }
 
         h2 {
             color: var(--primary);
-            margin-top: 30px;
-            border-left: 5px solid var(--secondary);
-            padding-left: 15px;
+            margin-top: 40px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         h3 {
-            color: #444;
-            margin-top: 20px;
-        }
-
-        hr {
-            border: 0;
-            height: 1px;
-            background: #ddd;
-            margin: 30px 0;
+            color: #555;
+            margin-top: 25px;
+            font-size: 1.2em;
         }
 
         ul {
@@ -65,33 +79,74 @@
         }
 
         li {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
-        strong {
-            color: var(--primary);
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge-admin {
+            background-color: #D32F2F;
+        }
+
+        .badge-siagie {
+            background-color: #1976D2;
+        }
+
+        .badge-aux {
+            background-color: #388E3C;
+        }
+
+        .note {
+            background-color: #E3F2FD;
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+
+        .warning {
+            background-color: #FFEBEE;
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            font-size: 0.95em;
+            color: #C62828;
         }
 
         .footer {
             text-align: center;
             margin-top: 50px;
+            padding: 20px;
             font-size: 0.9em;
             color: #777;
-        }
-
-        .no-print {
-            text-align: center;
-            margin-bottom: 20px;
+            border-top: 1px solid #eee;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
+            font-family: inherit;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background-color: #005f91;
         }
 
         @media print {
@@ -101,91 +156,136 @@
 
             body {
                 background: white;
-                padding: 0;
             }
 
             .container {
                 box-shadow: none;
-                width: 100%;
-                max-width: none;
+                margin: 0;
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+                background: white;
+                color: var(--primary);
+                border-bottom: 2px solid var(--primary);
+            }
+
+            .header h1 {
+                font-size: 2em;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="no-print">
-        <button onclick="window.print()">📥 Imprimir o Guardar como PDF</button>
+    <div class="header">
+        <h1>GH Asistencia QR</h1>
+        <p>I.E.E. "Genaro Herrera" - Manual Oficial de Usuario</p>
+    </div>
+
+    <div class="no-print" style="text-align: center; margin-top: 20px;">
+        <button onclick="window.print()">📥 Imprimir / Guardar PDF</button>
     </div>
 
     <div class="container">
-        <h1>📖 Manual de Usuario: GH Asistencia QR</h1>
-        <p style="text-align:center;"><em>I.E.E. "Genaro Herrera" - Contamana</em></p>
 
-        <hr>
+        <h2>1. Introducción y Acceso</h2>
+        <p>El sistema <strong>GH Asistencia QR</strong> permite gestionar el control de asistencia, incidencias y
+            comunicados de manera digital. El acceso está restringido mediante credenciales autorizadas.</p>
 
-        <h2>1. Acceso al Sistema (Login)</h2>
-        <p>Para ingresar, cada miembro del personal debe introducir su <strong>PIN de Acceso</strong>.</p>
+        <h3>Roles de Usuario</h3>
         <ul>
-            <li><strong>ADMIN:</strong> Acceso total, gestión de usuarios, dispositivos e incidencias, y reinicio del
-                sistema.</li>
-            <li><strong>SIAGIE:</strong> Acceso a Generador de Pases y Reportes.</li>
-            <li><strong>AUXILIAR:</strong> Acceso a Escáner, Reportes e Incidencias.</li>
+            <li><span class="badge badge-admin">ADMINISTRADOR</span> Acceso total al sistema. Puede gestionar usuarios,
+                aprobar dispositivos, reiniciar bases de datos y ver todos los módulos.</li>
+            <li><span class="badge badge-siagie">SIAGISTA</span> Encargado de la base de datos de estudiantes. Tiene
+                acceso prioritario al módulo "Generador" para crear y actualizar pases.</li>
+            <li><span class="badge badge-aux">AUXILIAR</span> Personal encargado del control diario. Su acceso principal
+                es el "Escáner", "Incidencias" y "Reportes".</li>
         </ul>
 
-        <h2>2. 📝 Generador de Pases QR</h2>
-        <p>En esta pestaña se registran los alumnos y se generan sus códigos de identificación.</p>
+        <h2>2. 📝 Generador de Pases (Gestión de Alumnos)</h2>
+        <p>Este módulo permite registrar alumnos nuevos o actualizar sus datos para generar su tarjeta de identificación
+            (QR).</p>
         <ul>
-            <li><strong>Buscar Alumno:</strong> Permite recuperar los datos de un alumno ya registrado mediante su DNI
-                para reimprimir su QR.</li>
-            <li><strong>Generar Pase:</strong> Ingrese Nombre, DNI, Grado, Sección, Teléfono del Apoderado y Fecha de
-                Nacimiento.</li>
-            <li><strong>Actualizar Datos:</strong> Si el DNI ya existe, el sistema preguntará si se desea actualizar la
-                información.</li>
-            <li><strong>Descargar QR:</strong> Una vez generado, puede descargar el código como imagen (.png) para
-                imprimirlo.</li>
+            <li><strong>Nuevo Registro:</strong> Complete todos los campos (Nombre, DNI, Grado, Sección, Teléfono
+                Apoderado, Fecha Nacimiento) y haga clic en "Generar QR". El sistema validará que el DNI tenga 8
+                dígitos.</li>
+            <li><strong>Reimpresión:</strong> Use el buscador en la parte superior ("Buscar Alumno") ingresando el DNI.
+                Si el alumno existe, sus datos se cargarán automáticamente para volver a generar o descargar su código.
+            </li>
+            <li><strong>Actualización:</strong> Si ingresa un DNI ya existente pero cambia algún dato (ej. número de
+                celular), el sistema le preguntará si desea actualizar la información en la base de datos.</li>
         </ul>
 
         <h2>3. 📷 Escáner de Asistencia</h2>
-        <p>Es el corazón operativo del sistema para el registro diario.</p>
-        <ul>
-            <li><strong>Operación:</strong> Apunte la cámara al código QR del alumno.</li>
-            <li><strong>Notificación por WhatsApp:</strong> Si la casilla "Notificar al Apoderado" está activa, al
-                escanear se abrirá automáticamente un enlace de WhatsApp con un mensaje preconfigurado.</li>
-            <li><strong>Alertas de Voz:</strong> El sistema anunciará por voz el nombre del alumno, si tiene incidencias
-                o si es su cumpleaños.</li>
-            <li><strong>Estados:</strong> Puntual (6:00 AM - 7:45 AM) o Tardanza (fuera de ese horario).</li>
-        </ul>
+        <p>Esta es la herramienta principal para el registro diario de ingreso y salida.</p>
 
-        <h2>4. ⚠️ Sistema de Incidencias</h2>
-        <p>Permite marcar a estudiantes que tengan alertas especiales (disciplina, convivencia, etc.).</p>
-        <ul>
-            <li><strong>Registrar:</strong> Busque al alumno por DNI, seleccione una categoría y detalle el comentario.
-            </li>
-            <li><strong>Impacto:</strong> Cuando un alumno con incidencia es escaneado, el sistema emite una
-                <strong>alarma audible</strong> y muestra un aviso visual en rojo.
-            </li>
-        </ul>
+        <div class="note">
+            <strong>Modos de Escaneado:</strong> Es CRÍTICO seleccionar el modo correcto antes de empezar.
+            <ul>
+                <li>🌅 <strong>INGRESO:</strong> Registra la entrada. Calcula tardanzas automáticamente después de la
+                    hora límite (7:45 AM).</li>
+                <li>🌇 <strong>SALIDA:</strong> Registra la hora de retiro del estudiante.</li>
+            </ul>
+        </div>
 
-        <h2>5. 📊 Reportes y Estadísticas</h2>
-        <p>Visualice el estado general de la institución en tiempo real.</p>
+        <h3>Funciones Automáticas</h3>
         <ul>
-            <li><strong>Filtros:</strong> Filtre por Fecha, Grado y Sección.</li>
-            <li><strong>Exportación:</strong> Descargue el historial completo de asistencia en formato
-                <strong>CSV/Excel</strong> o la base de datos de los alumnos.
+            <li><strong>Notificación WhatsApp:</strong> Si la casilla "Notificar al Apoderado" está activa, al escanear
+                se abrirá una ventana de WhatsApp con un mensaje pre-redactado para enviar al padre de familia.</li>
+            <li><strong>Detección de Cumpleaños:</strong> El sistema reproduce una melodía y muestra un mensaje especial
+                si es el cumpleaños del alumno escaneado.</li>
+            <li><strong>Prevención de Duplicados:</strong> El sistema bloquea múltiples escaneos del mismo alumno en un
+                corto periodo de tiempo para evitar registros erróneos.</li>
+            <li><strong>🤖 Modo Robot (Automático):</strong> Si activa esta casilla, el sistema no abrirá WhatsApp Web.
+                En su lugar, enviará el mensaje a una "Cola de Espera" para que la computadora auxiliar lo envíe
+                automáticamente en segundo plano.
+                <br><em>* Requiere que el programa "Servidor Robot" esté ejecutándose.</em>
             </li>
         </ul>
 
-        <h2>6. 👥 Usuarios y Gestión (ADMIN)</h2>
+        <h2>4. 🚩 Sistema de Incidencias</h2>
+        <p>Permite a los auxiliares registrar comportamientos o eventos relevantes asociados a un alumno.</p>
         <ul>
-            <li><strong>Gestión de Personal:</strong> Agregar nuevos auxiliares con sus propios pines y roles.</li>
-            <li><strong>Dispositivos Autorizados:</strong> Control de qué teléfonos tienen acceso.</li>
-            <li><strong>Zona de Peligro:</strong> Reinicio de sistema para el inicio de nuevo año escolar.</li>
+            <li><strong>Registro:</strong> Busque al alumno por DNI, seleccione el tipo de incidencia (Convivencia,
+                Tecnológica, Normas, Grave) y añada un comentario detallado.</li>
+            <li><strong>Alerta en Escaneado:</strong> Cuando un alumno con una incidencia activa marca asistencia, el
+                sistema emite una <strong>ALERTA SONORA</strong> y muestra un aviso visual en rojo para que el auxiliar
+                esté al tanto.</li>
         </ul>
 
-        <hr>
+        <h2>5. 📢 Comunicados (WhatsApp Masivo)</h2>
+        <p>Herramienta para enviar mensajes importantes a grupos específicos de padres.</p>
+        <ul>
+            <li><strong>Filtros:</strong> Puede seleccionar un Grado y Sección específicos (ej. "5to C") o "Todos".</li>
+            <li><strong>Envío:</strong> Al cargar la lista, el sistema generará enlaces de WhatsApp individuales para
+                cada alumno. El auxiliar debe hacer clic en "Enviar" para cada uno.</li>
+        </ul>
+
+        <h2>6. 📊 Reportes y Base de Datos</h2>
+        <ul>
+            <li><strong>Reporte Diario:</strong> Muestra estadísticas en tiempo real de asistencias, tardanzas y faltas.
+                Puede filtrar por grado/sección e imprimir el reporte.</li>
+            <li><strong>Exportar Excel:</strong> Descarga el historial completo de asistencia para análisis
+                administrativo.</li>
+            <li><strong>Base de Datos Alumnos:</strong> Opción para validar y descargar la lista completa de alumnos
+                registrados en el sistema, incluyendo fecha de registro.</li>
+            <li><strong>Limpieza de Duplicados:</strong> Herramienta automática que busca alumnos con el mismo DNI y
+                elimina los registros antiguos, manteniendo solo el más reciente.</li>
+        </ul>
+
+        <h2>7. 🔒 Seguridad y Dispositivos</h2>
+        <div class="warning">
+            <strong>Protección de Acceso:</strong> El sistema utiliza un "Candado Digital". Cuando un dispositivo nuevo
+            intenta ingresar, quedará bloqueado hasta que un Administrador apruebe su solicitud desde la pestaña
+            "Dispositivos".
+        </div>
+        <p><strong>Para el Administrador:</strong> En la pestaña "Dispositivos" podrá ver las solicitudes pendientes.
+            Verifique quién es el propietario del dispositivo antes de dar clic en "Aprobar".</p>
+
         <div class="footer">
-            &copy; 2026 - I.E.E. Genaro Herrera - Sistema de Asistencia QR
+            <p>&copy; 2026 I.E.E. Genaro Herrera - Departamento de Innovación Tecnológica</p>
         </div>
     </div>
 </body>

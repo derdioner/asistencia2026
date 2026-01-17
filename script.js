@@ -64,7 +64,18 @@ let unsubscribeDeviceListener = null; // Unsubscribe handle
 try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log("Firebase conectado");
+
+    // OFFLINE PERSISTENCE (Hybrid Mode Support)
+    db.enablePersistence()
+        .catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.warn('Persistencia falló: Múltiples pestañas abiertas.');
+            } else if (err.code == 'unimplemented') {
+                console.warn('El navegador no soporta persistencia offline.');
+            }
+        });
+
+    console.log("Firebase conectado (con Persistencia)");
 } catch (error) {
     console.warn("Error inicializando Firebase (¿Faltan las llaves?):", error);
     showToast("⚠️ Configura Firebase en script.js", "error");
@@ -704,7 +715,30 @@ async function onScanSuccess(decodedText, decodedResult) {
                 if (phone.length === 9) phone = "51" + phone;
 
                 const waLink = `https://wa.me/${phone}?text=${encodedMsg}`;
-                window.open(waLink, '_blank');
+
+                const botMode = document.getElementById('botMode');
+                if (botMode && botMode.checked) {
+                    // QUEUE MODE (Offline Capable)
+                    db.collection('mail_queue').add({
+                        dni: data.id,
+                        name: data.n,
+                        phone: phone,
+                        message: message,
+                        status: 'pending', // pending -> sent
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        showToast("🤖 Mensaje encolado al Robot", "info");
+                    }).catch((err) => {
+                        console.error("Error cola:", err);
+                        // Fallback check if offline
+                        if (navigator.onLine === false) {
+                            showToast("⏳ Sin Internet: Mensaje guardado localmente", "warning");
+                        }
+                    });
+                } else {
+                    // MANUAL MODE
+                    window.open(waLink, '_blank');
+                }
             } else {
                 showToast("⚠️ Sin número de apoderado para notificar", "info");
             }

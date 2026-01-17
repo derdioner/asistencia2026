@@ -258,12 +258,27 @@
 
                 <!-- CONFIG TOGGLE -->
                 <div
-                    style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-                    <label for="autoNotify" style="margin:0; color: #0277bd; font-weight: 500; cursor: pointer;">
-                        📱 Notificar al Apoderado (WhatsApp)
-                    </label>
-                    <input type="checkbox" id="autoNotify" style="width: 20px; height: 20px; accent-color: #0277bd;"
-                        checked>
+                    style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 8px; display: flex; flex-direction: column;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:5px;">
+                        <label for="autoNotify" style="margin:0; color: #0277bd; font-weight: 500; cursor: pointer;">
+                            📱 Notificar al Apoderado (WhatsApp)
+                        </label>
+                        <input type="checkbox" id="autoNotify" style="width: 20px; height: 20px; accent-color: #0277bd;"
+                            checked>
+                    </div>
+
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; width:100%; border-top:1px dashed #bbdefb; padding-top:5px;">
+                        <label for="botMode"
+                            style="margin:0; color: #2E7D32; font-weight: bold; cursor: pointer; font-size:13px;">
+                            🤖 Modo Robot (Automático)
+                        </label>
+                        <input type="checkbox" id="botMode" style="width: 20px; height: 20px; accent-color: #2E7D32;">
+                    </div>
+                    <div style="font-size:10px; color:#666; margin-top:3px;">
+                        * Activar solo si el "Servidor Robot" está encendido.
+                    </div>
                 </div>
             </div>
 
