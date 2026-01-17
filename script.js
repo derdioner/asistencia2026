@@ -587,7 +587,12 @@ function startScanner() {
     setTimeout(() => {
         if (!html5QrcodeScanner) {
             html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", { fps: 10, qrbox: { width: 250, height: 250 } },
+                "reader", {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                rememberLastUsedCamera: true,
+                aspectRatio: 1.0
+            },
                 false
             );
             html5QrcodeScanner.render(onScanSuccess, onScanFailure);
@@ -597,6 +602,17 @@ function startScanner() {
 }
 
 function stopScanner() {
+    if (html5QrcodeScanner) {
+        try {
+            html5QrcodeScanner.clear().catch(error => {
+                console.error("Failed to clear scanner", error);
+            });
+        } catch (e) {
+            console.warn("Scanner clear error", e);
+        }
+        html5QrcodeScanner = null;
+        isScanning = false;
+    }
 }
 
 const processedScans = new Map();
@@ -1449,7 +1465,12 @@ function playSuccessSound() {
 
         // --- VOICE FEEDBACK ---
         if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance("Pase por favor");
+            let text = "Pase por favor";
+            if (currentScanMode === 'salida') {
+                text = "Hasta mañana";
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'es-ES'; // Spanish
             utterance.rate = 1.1; // Slightly faster
             window.speechSynthesis.speak(utterance);
