@@ -27,16 +27,6 @@
           "order": "ASCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "students",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "created",
-          "order": "DESCENDING"
-        }
-      ]
     }
   ],
   "fieldOverrides": []
