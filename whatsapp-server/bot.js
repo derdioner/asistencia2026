@@ -19,16 +19,32 @@ const db = admin.firestore();
 
 // --- WHATSAPP CLIENT INIT ---
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth(), // ✅ ACTIVADO: Memoria persistente
     puppeteer: {
-        headless: true, // Set to false if you want to see the browser pop up
-        args: ['--no-sandbox']
+        headless: false, // Changed to false to debug crash
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu'
+        ]
     }
 });
 
 client.on('qr', (qr) => {
     console.log('⚡ ESCANEA ESTE QR CON TU WHATSAPP (Como WhatsApp Web):');
     qrcode.generate(qr, { small: true });
+});
+
+client.on('authenticated', () => {
+    console.log('🔑 AUTENTICADO CORRECTAMENTE (Esperando sincronización...)');
+});
+
+client.on('auth_failure', msg => {
+    console.error('❌ FALLO DE AUTENTICACIÓN', msg);
 });
 
 client.on('ready', () => {
@@ -76,7 +92,7 @@ async function processMessage(docId, data) {
     const messageBody = data.message;
 
     try {
-        await client.sendMessage(chatId, messageBody);
+        await client.sendMessage(chatId, messageBody, { sendSeen: false });
         console.log(`✅ Enviado a ${data.name} (${phone})`);
 
         // Update status in Firestore
