@@ -10,7 +10,8 @@
             "firebase.json",
             "**/.*",
             "**/node_modules/**",
-            "whatsapp-server/**"
+            "whatsapp-server/**",
+            "INICIAR_ROBOT.bat"
         ],
         "rewrites": [
             {
