@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.37">
+    <link rel="stylesheet" href="style.css?v=26.38">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.37">
+    <link rel="manifest" href="manifest.json?v=26.38">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -621,7 +621,17 @@
                 </table>
             </div>
 
-            <!-- DANGER ZONE REMOVED PER USER REQUEST -->
+            <!-- DANGER ZONE: SYSTEM RESET (RESTORED WITHOUT FACTORY RESEET) -->
+            <div class="card" style="margin-top: 20px; border: 2px dashed #D32F2F; background: #FFEBEE;">
+                <h3 style="color: #D32F2F; margin-top: 0;">⚠️ Zona de Administrador</h3>
+                <p style="font-size: 13px; color: #666;">
+                    Utilice esta opción solo si desea reiniciar el sistema o borrar datos críticos.
+                </p>
+                <button class="btn-danger" style="width: auto; padding: 12px 25px; font-weight: bold;"
+                    onclick="clearHistory()">
+                    ⚙️ REINICIO DE SISTEMA
+                </button>
+            </div>
         </div>
 
         <!-- FLEX SPACER to ensure footer stays at bottom -->
@@ -630,7 +640,7 @@
         <footer
             style="text-align: center; margin-top: 40px; padding: 20px; font-size: 14px; background-color: var(--primary-color); color: white; border-top: 1px solid #E1F5FE; font-weight: 500;">
             &copy; Derechos Reservados - I.E.E. Genaro Herrera - Contamana - 2026
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.37 (Estable)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.38 (Estable)</span>
         </footer>
     </div>
 
@@ -663,7 +673,7 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.37"></script>
+    <script src="script.js?v=26.38"></script>
 </body>
 
 </html>

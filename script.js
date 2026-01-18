@@ -838,7 +838,7 @@ async function clearHistory() {
     const password = prompt("⚠ ZONA DE PELIGRO ⚠\n\nIngrese contraseña ADMIN para REINICIAR el sistema:");
 
     if (password === "339710") {
-        const choice = prompt("¿Qué desea borrar?\n\n1 = Solo Historial de Asistencia\n2 = REINICIO TOTAL DE FÁBRICA\n3 = SOLO Borrar Usuarios/Roles\n4 = 🔥 REVOCAR TODOS LOS DISPOSITIVOS");
+        const choice = prompt("¿Qué desea borrar?\n\n1 = Solo Historial de Asistencia\n2 = SOLO Borrar Usuarios/Roles\n3 = 🔥 REVOCAR TODOS LOS DISPOSITIVOS");
 
         if (choice === "1") {
             if (confirm("¿Confirmar eliminación del HISTORIAL DE ASISTENCIA?")) {
@@ -847,28 +847,13 @@ async function clearHistory() {
                 renderHistory();
             }
         } else if (choice === "2") {
-            const confirmTotal = prompt("🔴 ¡ADVERTENCIA FINAL! 🔴\n\nEsto borrará TODOS los alumnos, asistencias, usuarios e INCIDENCIAS.\n\nEscribe 'CONFIRMAR' para proceder:");
-            if (confirmTotal === "CONFIRMAR") {
-                showToast("Iniciando borrado total...", "info");
-                await deleteCollection('attendance');
-                await deleteCollection('students');
-                await deleteCollection('app_users'); // Include users
-                await deleteCollection('incidents'); // Delete incidents
-                // Note: We do NOT delete authorized_devices here to avoid locking out the admin during reset, unless requested.
-                // If they want to reset devices too, they should use Option 4.
-                showToast("✅ SISTEMA REINICIADO.", "success", 5000);
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                showToast("Operación cancelada.", "info");
-            }
-        } else if (choice === "3") {
             if (confirm("⚠️ ¿Borrar TODOS los usuarios y roles creados?\n\nEl sistema se reiniciará y volverá a crear solo el Usuario Admin por defecto.")) {
                 showToast("Borrando usuarios...", "info");
                 await deleteCollection('app_users');
                 showToast("✅ Usuarios eliminados.", "success");
                 setTimeout(() => location.reload(), 2000);
             }
-        } else if (choice === "4") {
+        } else if (choice === "3") {
             revokeAllDevices(true);
         } else {
             showToast("Opción no válida.", "info");
