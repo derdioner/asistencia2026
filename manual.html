@@ -180,12 +180,15 @@
 
 <body>
     <div class="header">
+        <img src="logo.png" alt="Logo Genaro Herrera"
+            style="width: 100px; height: auto; margin-bottom: 15px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
         <h1>GH Asistencia QR</h1>
-        <p>I.E.E. "Genaro Herrera" - Manual Oficial de Usuario</p>
+        <p>I.E.E. "Genaro Herrera" - Manual Oficial de Usuario v26.38</p>
     </div>
 
     <div class="no-print" style="text-align: center; margin-top: 20px;">
-        <button onclick="window.print()">📥 Imprimir / Guardar PDF</button>
+        <button onclick="window.print()" style="font-size: 1.1em; padding: 15px 30px;">📥 Descargar Manual
+            (PDF)</button>
     </div>
 
     <div class="container">
@@ -233,7 +236,9 @@
         <h3>Funciones Automáticas</h3>
         <ul>
             <li><strong>Notificación WhatsApp:</strong> Si la casilla "Notificar al Apoderado" está activa, al escanear
-                se abrirá una ventana de WhatsApp con un mensaje pre-redactado para enviar al padre de familia.</li>
+                se abrirá una ventana de WhatsApp con un mensaje pre-redactado para enviar al padre de familia.
+                <em>(Activado por defecto en v26.36+)</em>
+            </li>
             <li><strong>Detección de Cumpleaños:</strong> El sistema reproduce una melodía y muestra un mensaje especial
                 si es el cumpleaños del alumno escaneado.</li>
             <li><strong>Prevención de Duplicados:</strong> El sistema bloquea múltiples escaneos del mismo alumno en un
@@ -284,8 +289,24 @@
         <p><strong>Para el Administrador:</strong> En la pestaña "Dispositivos" podrá ver las solicitudes pendientes.
             Verifique quién es el propietario del dispositivo antes de dar clic en "Aprobar".</p>
 
+        <h2>8. ⚙️ Zona de Administrador (Mantenimiento)</h2>
+        <p>Para garantizar la integridad de los datos, el sistema cuenta con opciones de mantenimiento seguro. Estas
+            opciones requieren contraseña de administrador.</p>
+        <ul>
+            <li><strong>1. Solo Historial de Asistencia:</strong> Borra únicamente los registros de entrada/salida.
+                Mantiene intactos los datos de alumnos y usuarios.</li>
+            <li><strong>2. Solo Borrar Usuarios:</strong> Elimina las cuentas de acceso (Auxiliares, Siagistas) pero
+                mantiene al Administrador principal.</li>
+            <li><strong>3. Revocar Dispositivos:</strong> Desvincula todos los celulares/laptops autorizados, obligando
+                a solicitar acceso nuevamente.</li>
+        </ul>
+        <div class="note">
+            <strong>Nota de Seguridad:</strong> La opción de "Reinicio de Fábrica" ha sido deshabilitada para prevenir
+            la pérdida accidental de la base de datos de alumnos.
+        </div>
+
         <div class="footer">
-            <p>&copy; 2026 I.E.E. Genaro Herrera - Departamento de Innovación Tecnológica</p>
+            <p>&copy; 2026 I.E.E. Genaro Herrera - Departamento de Innovación Tecnológica - v26.38</p>
         </div>
     </div>
 </body>
