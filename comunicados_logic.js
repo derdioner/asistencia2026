@@ -1,5 +1,9 @@
 
 // --- COMUNICADOS LOGIC ---
+
+// Global list to store loaded targets
+let currentCommList = [];
+
 async function loadCommunicationTargets() {
     if (!db) return;
 
@@ -36,6 +40,7 @@ async function loadCommunicationTargets() {
             }
         });
 
+        currentCommList = targets; // Store globally
         renderCommunicationList(targets);
 
         if (targets.length === 0) {
@@ -61,8 +66,9 @@ function renderCommunicationList(list) {
     tbody.innerHTML = '';
     countSpan.innerText = `(${list.length} destinatarios)`;
 
-    list.forEach(student => {
+    list.forEach((student, index) => {
         const tr = document.createElement('tr');
+        tr.id = `row-${index}`; // Add ID for updating
         tr.style.borderBottom = '1px solid #eee';
 
         tr.innerHTML = `
@@ -70,7 +76,7 @@ function renderCommunicationList(list) {
             <td style="padding:10px;">${student.g}° "${student.s}"</td>
             <td style="padding:10px;">${student.p}</td>
             <td style="padding:10px; text-align:right;">
-                <button onclick="sendWhatsAppMessage('${student.p}', '${student.n}', this)" 
+                <button id="btn-${index}" onclick="sendWhatsAppMessage('${student.p}', '${student.n}', this)" 
                     class="btn-wa-send"
                     style="background: #25D366; color: white; border: none; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold;">
                     📤 Enviar
@@ -88,6 +94,9 @@ function sendWhatsAppMessage(phone, name, btnElement) {
         return;
     }
 
+    // Check if Robot Mode is active (default for mass send, but let's check global toggle if exists, or just queue it)
+    // For individual manual clicks, we open WA Web.
+
     // Clean phone
     let cleanPhone = phone.replace(/\D/g, '');
     if (cleanPhone.length === 9) cleanPhone = '51' + cleanPhone;
@@ -104,5 +113,68 @@ function sendWhatsAppMessage(phone, name, btnElement) {
         btnElement.style.background = "#ccc";
         btnElement.style.color = "#666";
         btnElement.disabled = true;
+    }
+}
+
+// --- ROBOT MASS SEND ---
+async function sendAllComms() {
+    const rawMsg = document.getElementById('commMessage').value;
+    if (!rawMsg) {
+        alert("⚠️ Escribe un mensaje antes de enviar.");
+        return;
+    }
+
+    if (!confirm(`¿Estás seguro de enviar este mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nAsegúrate de que el 'Servidor Robot' esté encendido.`)) {
+        return;
+    }
+
+    const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
+    if (btnAll) btnAll.disabled = true;
+
+    showToast("🚀 Iniciando envío masivo a la cola...", "info");
+
+    let count = 0;
+    const total = currentCommList.length;
+
+    // Batch add to Firestore
+    const batchSize = 100; // Firestore batch limit varies, but we'll add one by one or promises for simplicity in this context
+
+    for (let i = 0; i < total; i++) {
+        const s = currentCommList[i];
+
+        // Update UI row
+        const btn = document.getElementById(`btn-${i}`);
+        if (btn) {
+            btn.innerText = "⏳ Encolando...";
+            btn.disabled = true;
+        }
+
+        try {
+            await db.collection('mail_queue').add({
+                phone: s.p,
+                name: s.n,
+                message: rawMsg,
+                status: 'pending',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            if (btn) {
+                btn.innerText = "🤖 En cola";
+                btn.style.background = "#FF9800"; // Orange for pending
+            }
+            count++;
+        } catch (e) {
+            console.error("Error queueing", e);
+            if (btn) {
+                btn.innerText = "❌ Error";
+                btn.style.background = "#F44336";
+            }
+        }
+    }
+
+    showToast(`✅ Se enviaron ${count} mensajes a la cola del Robot.`, "success");
+    if (btnAll) {
+        btnAll.innerText = "✅ FINALIZADO";
+        btnAll.style.background = "#ccc";
     }
 }
