@@ -155,6 +155,7 @@ async function sendAllComms() {
                 name: s.n,
                 message: rawMsg,
                 status: 'pending',
+                type: 'mass', // LOW PRIORITY
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 

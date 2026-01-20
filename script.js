@@ -741,6 +741,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                         phone: phone,
                         message: message,
                         status: 'pending', // pending -> sent
+                        type: 'attendance', // HIGH PRIORITY
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }).then(() => {
                         showToast("🤖 Mensaje encolado al Robot", "info");

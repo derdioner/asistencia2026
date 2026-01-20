@@ -63,6 +63,7 @@ client.initialize();
 // --- LISTENER LOGIC (STRICT QUEUE) ---
 let messageBuffer = [];
 let isProcessing = false;
+let massCounter = 0;
 
 function listenForMessages() {
     console.log("👀 Monitor de cola activado. Esperando mensajes...");
@@ -104,12 +105,40 @@ async function processQueue() {
     }
 
     isProcessing = true;
-    const task = messageBuffer.shift(); // Get first item
 
-    // SAFETY DELAY (15 - 25 seconds)
-    // Randomize to look human
-    const delay = Math.floor(Math.random() * 10000) + 15000;
-    console.log(`⏳ Esperando seguridad (${(delay / 1000).toFixed(1)}s) antes de enviar a ${task.data.name}...`);
+    // PRIORITY SORT: 'attendance' first, then 'mass' (or others)
+    messageBuffer.sort((a, b) => {
+        const typeA = a.data.type || 'mass';
+        const typeB = b.data.type || 'mass';
+        if (typeA === 'attendance' && typeB !== 'attendance') return -1;
+        if (typeA !== 'attendance' && typeB === 'attendance') return 1;
+        return 0; // Keep insertion order otherwise
+    });
+
+    const task = messageBuffer.shift(); // Get first item
+    const msgType = task.data.type || 'mass'; // Default to mass if missing
+
+    // --- DYNAMIC DELAY LOGIC ---
+    let delay = 0;
+
+    if (msgType === 'attendance') {
+        // High Priority: Fast but safe (10s - 20s)
+        delay = Math.floor(Math.random() * 10000) + 10000;
+        console.log(`🚑 ALTA PRIORIDAD (${task.data.name}): Esperando solo ${Math.floor(delay / 1000)}s...`);
+    } else {
+        // Low Priority (Mass): Slow and steady (45s - 90s)
+        delay = Math.floor(Math.random() * 45000) + 45000;
+        console.log(`🐢 MASIVO / NORMAL (${task.data.name}): Esperando seguridad ${Math.floor(delay / 1000)}s...`);
+
+        // BATCH COOL DOWN LOGIC (Only for Mass)
+        massCounter++;
+        if (massCounter >= 20) {
+            console.log("🛑 LÍMITE DE LOTE ALCANZADO (20 mensajes). Pausando 5 MINUTOS para evitar bloqueo...");
+            await new Promise(r => setTimeout(r, 300000)); // 5 minutes
+            massCounter = 0;
+            console.log("♻️ Resumiendo envío masivo...");
+        }
+    }
 
     await new Promise(r => setTimeout(r, delay));
 
@@ -128,8 +157,14 @@ async function processMessage(docId, data) {
     const messageBody = data.message;
 
     try {
+        // TYPING SIMULATION (Human behavior)
+        const chat = await client.getChatById(chatId);
+        await chat.sendStateTyping();
+        // Wait a bit while "typing"
+        await new Promise(r => setTimeout(r, 3000));
+
         await client.sendMessage(chatId, messageBody, { sendSeen: false });
-        console.log(`✅ [ENVIADO] -> ${data.name} (${phone})`);
+        console.log(`✅ [ENVIADO - ${data.type || 'mass'}] -> ${data.name} (${phone})`);
 
         // Mark as sent
         await db.collection('mail_queue').doc(docId).update({
