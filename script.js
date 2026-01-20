@@ -720,12 +720,25 @@ async function onScanSuccess(decodedText, decodedResult) {
         if (notifyCheckbox && notifyCheckbox.checked) {
             if (data.p && data.p.length >= 9) {
                 const hour = now.getHours();
-                let greeting = "Buenos días";
-                if (hour >= 12) greeting = "Buenas tardes";
-                if (hour >= 18) greeting = "Buenas noches";
+                // --- SPINTAX (VARIABILIDAD) ---
+                const greetings = ["Hola", "Buenos días", "Estimado apoderado", "Saludos", "Buen día"];
+                const greeting = greetings[Math.floor(Math.random() * greetings.length)];
 
-                const verb = currentScanMode === 'ingreso' ? 'asistió al' : 'salió del';
-                const message = `${greeting}, el estudiante *${data.n}* ${verb} colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}.${incidentMsg}`;
+                const verbsIngreso = ["ingresó al", "llegó al", "marcó su entrada al", "ya está en el"];
+                const verbsSalida = ["salió del", "se retiró del", "marcó su salida del", "partió del"];
+
+                let verb;
+                if (currentScanMode === 'ingreso') {
+                    verb = verbsIngreso[Math.floor(Math.random() * verbsIngreso.length)];
+                } else {
+                    verb = verbsSalida[Math.floor(Math.random() * verbsSalida.length)];
+                }
+
+                // Random emojis at the end
+                const emojis = ["✅", "🏫", "🎒", "👋", "🕒", "✨"];
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+                const message = `${greeting}, le informamos que el estudiante *${data.n}* ${verb} colegio el día de hoy ${todayDate} a las ${now.toLocaleTimeString()}. ${randomEmoji}${incidentMsg}`;
                 const encodedMsg = encodeURIComponent(message);
                 let phone = data.p.replace(/\D/g, '');
                 if (phone.length === 9) phone = "51" + phone;

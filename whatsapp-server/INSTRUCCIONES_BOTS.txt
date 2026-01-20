@@ -1,0 +1,17 @@
+GUÍA RÁPIDA - SISTEMA DE NOTIFICACIONES (FLOTA DE ROBOTS)
+
+1. MODO DE USO
+   - Haga doble clic en el archivo "start_bots.bat" (Lanzador de Flota).
+   - Se abrirán 3 ventanas negras automátiamente.
+
+2. VINCULACIÓN
+   - Cada ventana corresponde a un robot auxiliar (Auxiliar 1, 2 y 3).
+   - En cada ventana aparecerá un código QR diferente.
+   - Pida a cada auxiliar que escanee UN código con su WhatsApp (Menú -> Dispositivos Vinculados).
+
+3. FUNCIONAMIENTO
+   - No cierre las ventanas negras; deben quedarse abiertas para enviar los mensajes.
+   - El sistema repartirá los alumnos automáticamente entre los 3 celulares.
+   - Si un celular se apaga, los otros dos seguirán trabajando.
+
+NOTA: Si solo tiene 1 o 2 auxiliares disponibles, simplemente cierre las ventanas que sobran. El sistema se adapta solo.
