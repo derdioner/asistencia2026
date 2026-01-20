@@ -60,50 +60,85 @@ client.on('auth_failure', msg => {
 client.initialize();
 
 // --- LISTENER LOGIC ---
-function listenForMessages() {
-    console.log("👀 Escuchando cola de mensajes en 'mail_queue'...");
+// --- LISTENER LOGIC (STRICT QUEUE) ---
+let messageBuffer = [];
+let isProcessing = false;
 
-    // Listen for docs with status 'pending'
+function listenForMessages() {
+    console.log("👀 Monitor de cola activado. Esperando mensajes...");
+
+    // 1. Listen and FILL buffer
     db.collection('mail_queue')
         .where('status', '==', 'pending')
         .onSnapshot(snapshot => {
-            snapshot.docChanges().forEach(async change => {
+            snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
                     const data = change.doc.data();
                     const docId = change.doc.id;
 
-                    console.log(`📩 Nuevo mensaje detectado para: ${data.name}`);
+                    console.log(`📥 [BUFFER] Nuevo mensaje para: ${data.name}`);
 
-                    // Add small delay to avoid spam filters if many come at once
-                    const randomDelay = Math.floor(Math.random() * 3000) + 1000;
-                    setTimeout(() => processMessage(docId, data), randomDelay);
+                    // Add to local buffer if not already present (avoid dupes)
+                    if (!messageBuffer.find(m => m.id === docId)) {
+                        messageBuffer.push({ id: docId, data: data });
+                    }
                 }
             });
+
+            // Trigger processor if asleep
+            if (!isProcessing && messageBuffer.length > 0) {
+                processQueue();
+            }
+
         }, error => {
             console.error("❌ Error escuchando Firestore:", error);
         });
 }
 
+// 2. Sequential Processor Loop
+async function processQueue() {
+    if (messageBuffer.length === 0) {
+        isProcessing = false;
+        console.log("💤 Cola vacía. Esperando...");
+        return;
+    }
+
+    isProcessing = true;
+    const task = messageBuffer.shift(); // Get first item
+
+    // SAFETY DELAY (15 - 25 seconds)
+    // Randomize to look human
+    const delay = Math.floor(Math.random() * 10000) + 15000;
+    console.log(`⏳ Esperando seguridad (${(delay / 1000).toFixed(1)}s) antes de enviar a ${task.data.name}...`);
+
+    await new Promise(r => setTimeout(r, delay));
+
+    await processMessage(task.id, task.data);
+
+    // Loop
+    processQueue();
+}
+
 async function processMessage(docId, data) {
-    // Format Phone Number: 51987654321@c.us
-    let phone = data.phone.replace(/\D/g, ''); // Remove non-numbers
-    if (phone.length === 9) phone = '51' + phone; // Add Peru Prefix
+    // Format Phone
+    let phone = data.phone.replace(/\D/g, '');
+    if (phone.length === 9) phone = '51' + phone;
     const chatId = `${phone}@c.us`;
 
     const messageBody = data.message;
 
     try {
         await client.sendMessage(chatId, messageBody, { sendSeen: false });
-        console.log(`✅ Enviado a ${data.name} (${phone})`);
+        console.log(`✅ [ENVIADO] -> ${data.name} (${phone})`);
 
-        // Update status in Firestore
+        // Mark as sent
         await db.collection('mail_queue').doc(docId).update({
             status: 'sent',
             sentAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
     } catch (error) {
-        console.error(`❌ Falló envío a ${data.name}:`, error.message);
+        console.error(`❌ [ERROR] Falló envío a ${data.name}:`, error.message);
 
         // Mark as error
         await db.collection('mail_queue').doc(docId).update({
