@@ -11,6 +11,15 @@ console.log(`🤖 INICIANDO BOT CON IDENTIDAD: [${sessionName.toUpperCase()}]`);
 // Set Terminal Title for easier identification
 process.title = `🤖 BOT WHATSAPP - ${sessionName.toUpperCase()}`;
 
+process.on('unhandledRejection', (reason, p) => {
+    console.error('❌ ERROR NO CAPTURADO (PROMISE):', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('❌ ERROR CRÍTICO NO CAPTURADO:', error);
+    // keep alive if possible or let the user see it
+});
+
 // --- FIREBASE ADMIN INIT ---
 try {
     if (!admin.apps.length) { // Prevent re-init error if code reloads
