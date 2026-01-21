@@ -136,6 +136,12 @@ async function sendAllComms() {
     let count = 0;
     const total = currentCommList.length;
 
+    // --- FOOTER WITH BOT NUMBERS ---
+    const botFooter = `\n\n👇 *IMPORTANTE: GUARDA NUESTROS NÚMEROS*\nAgreganos para recibir reportes automáticamente:\n📱 981 353 850\n📱 947 836 380\n📱 947 836 063\n📱 947 847 883`;
+
+    // Append footer (User doesn't see it in textarea but it sends)
+    const finalMessageToSend = rawMsg + botFooter;
+
     // Batch add to Firestore
     const batchSize = 100; // Firestore batch limit varies, but we'll add one by one or promises for simplicity in this context
 
@@ -153,7 +159,7 @@ async function sendAllComms() {
             await db.collection('mail_queue').add({
                 phone: s.p,
                 name: s.n,
-                message: rawMsg,
+                message: finalMessageToSend,
                 status: 'pending',
                 type: 'mass', // LOW PRIORITY
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
