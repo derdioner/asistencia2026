@@ -186,8 +186,8 @@ async function processMessageLogic(docId, data) {
         delay = Math.floor(Math.random() * 17000) + 8000;
         console.log(`🚑 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
     } else {
-        // Low Priority: 45s - 90s
-        delay = Math.floor(Math.random() * 45000) + 45000;
+        // Low Priority: 20s - 30s (User Request)
+        delay = Math.floor(Math.random() * 10000) + 20000;
         console.log(`🐢 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
 
         // Batch Logic (Per Bot)
