@@ -2453,7 +2453,7 @@ function renderCommunicationList(list) {
             <td style="padding:10px;">${student.g}° "${student.s}"</td>
             <td style="padding:10px;">${student.p}</td>
             <td style="padding:10px; text-align:right;">
-                <button id="btn-${index}" onclick="sendWhatsAppMessage('${student.p}', '${student.n}', this)" 
+                <button id="btn-${index}" data-phone="${student.p}" onclick="sendWhatsAppMessage('${student.p}', '${student.n}', this)" 
                     class="btn-wa-send"
                     style="background: #25D366; color: white; border: none; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold;">
                     📤 Enviar
