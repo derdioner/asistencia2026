@@ -102,64 +102,67 @@ function listenForMessages() {
 async function processQueueCandidate(snapshot) {
     if (isProcessing) return;
 
-    // Convert snapshot to array to check candidates
+    // Convert snapshot to array
     const docs = [];
     snapshot.forEach(doc => docs.push(doc));
 
-    // Simple strategy: Pick the OLDEST one first (FIFO)
-    // Or Priority: Attendance first
+    if (docs.length === 0) return;
+
+    // Sort: Priority to 'attendance', then 'mass' (oldest first)
     docs.sort((a, b) => {
         const dA = a.data();
         const dB = b.data();
-        // Priority 1: Type 'attendance' wins
         if (dA.type === 'attendance' && dB.type !== 'attendance') return -1;
         if (dA.type !== 'attendance' && dB.type === 'attendance') return 1;
-        // Priority 2: Timestamp (Oldest first)
-        return (dA.timestamp?.seconds || 0) - (dB.timestamp?.seconds || 0);
+        return (dA.createdAt?.seconds || 0) - (dB.createdAt?.seconds || 0);
     });
 
-    const candidate = docs[0];
-    if (!candidate) return;
-
-    // --- CLAIM TRANSACTION ---
-    // Only ONE bot can process this message. We use a transaction to "claim" it.
+    // --- CLAIM LOOP ---
+    // Try to claim a message. If race lost, try the next one immediately.
     isProcessing = true;
+    let claimedDocId = null;
+    let claimedData = null;
 
-    try {
-        const didClaim = await db.runTransaction(async (t) => {
-            const docRef = db.collection('mail_queue').doc(candidate.id);
-            const doc = await t.get(docRef);
+    for (const candidate of docs) {
+        // Double check local status before transaction overhead
+        if (candidate.data().status !== 'pending') continue;
 
-            if (!doc.exists) return false;
-            const data = doc.data();
+        try {
+            const didClaim = await db.runTransaction(async (t) => {
+                const docRef = db.collection('mail_queue').doc(candidate.id);
+                const doc = await t.get(docRef);
 
-            if (data.status !== 'pending') {
-                return false; // Someone else took it!
+                if (!doc.exists) return false;
+                if (doc.data().status !== 'pending') return false; // Already taken
+
+                // Claim it!
+                t.update(docRef, {
+                    status: 'processing',
+                    processedBy: sessionName,
+                    pickedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            });
+
+            if (didClaim) {
+                claimedDocId = candidate.id;
+                claimedData = candidate.data();
+                break; // Exit loop, we got work!
+            } else {
+                console.log(`⚠️ ${sessionName}: Conflicto en ${candidate.data().name}. Intentando siguiente...`);
             }
 
-            // Claim it!
-            t.update(docRef, {
-                status: 'processing',
-                processedBy: sessionName,
-                pickedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-            return true;
-        });
-
-        if (didClaim) {
-            console.log(`🔒 ${sessionName}: Mensaje reclamado (${candidate.data().name}). Procesando...`);
-            await processMessageLogic(candidate.id, candidate.data());
-        } else {
-            console.log(`⚠️ ${sessionName}: Perdí la carrera. Otro bot tomó el mensaje.`);
-            // Wait a small random bit before checking again to desist sync
-            await new Promise(r => setTimeout(r, Math.random() * 2000));
+        } catch (e) {
+            console.error("Transaction Error:", e);
         }
+    }
 
-    } catch (e) {
-        console.error("Transaction Error:", e);
-    } finally {
+    if (claimedDocId && claimedData) {
+        console.log(`🔒 ${sessionName}: Mensaje reclamado (${claimedData.name}). Procesando...`);
+        await processMessageLogic(claimedDocId, claimedData);
+    } else {
+        // If we looped everything and got nothing, just relax.
         isProcessing = false;
-        // Check if there are more? The snapshot listener will trigger again if pending docs remain.
     }
 }
 

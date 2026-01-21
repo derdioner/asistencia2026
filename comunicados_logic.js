@@ -139,8 +139,8 @@ async function sendAllComms() {
     // --- FOOTER WITH BOT NUMBERS ---
     const botFooter = `\n\n👇 *IMPORTANTE: GUARDA NUESTROS NÚMEROS*\nAgreganos para recibir reportes automáticamente:\n📱 981 353 850\n📱 947 836 380\n📱 947 836 063\n📱 947 847 883`;
 
-    // Append footer (User doesn't see it in textarea but it sends)
-    const finalMessageToSend = rawMsg + botFooter;
+    // Greetings for humanization
+    const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
 
     // Batch add to Firestore
     const batchSize = 100; // Firestore batch limit varies, but we'll add one by one or promises for simplicity in this context
@@ -156,10 +156,21 @@ async function sendAllComms() {
         }
 
         try {
+            // --- PERSONALIZATION LOGIC ---
+            // 1. Pick random greeting
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+            // 2. Construct personalized header
+            // "Hola JUAN PEREZ,"
+            const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+
+            // 3. Combine parts: Header + User Message + Footer
+            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}${botFooter}`;
+
             await db.collection('mail_queue').add({
                 phone: s.p,
                 name: s.n,
-                message: finalMessageToSend,
+                message: personalizedMessage,
                 status: 'pending',
                 type: 'mass', // LOW PRIORITY
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -184,4 +195,55 @@ async function sendAllComms() {
         btnAll.innerText = "✅ FINALIZADO";
         btnAll.style.background = "#ccc";
     }
+}
+
+// --- STOP / CLEAR QUEUE ---
+async function stopMassQueue() {
+    if (!confirm("🚨 ¿ESTÁS SEGURO DE DETENER EL ENVÍO?\n\nEsto borrará todos los mensajes 'Pendientes' de la cola. Los que ya están processando no se pueden detener.")) {
+        return;
+    }
+
+    const btn = document.querySelector('button[onclick="stopMassQueue()"]');
+    if (btn) btn.innerText = "⏳ Limpiando...";
+
+    try {
+        const batchSize = 400;
+        const snapshot = await db.collection('mail_queue')
+            .where('status', '==', 'pending')
+            .get();
+
+        if (snapshot.empty) {
+            showToast("No hay mensajes pendientes para borrar.", "info");
+            if (btn) btn.innerText = "🛑 DETENER / LIMPIAR";
+            return;
+        }
+
+        const batch = db.batch();
+        let count = 0;
+        snapshot.forEach(doc => {
+            batch.delete(doc.ref);
+            count++;
+        });
+
+        await batch.commit();
+        showToast(`🛑 SE ELIMINARON ${count} MENSAJES PENDIENTES.`, "success");
+
+    } catch (e) {
+        console.error("Error clearing queue", e);
+        showToast("Error al limpiar cola: " + e.message, "error");
+    } finally {
+        if (btn) btn.innerText = "🛑 DETENER / LIMPIAR";
+    }
+}
+
+// --- RESET LIST ON FILTER CHANGE ---
+function resetCommList() {
+    // Hide the list container
+    document.getElementById('commListCard').style.display = 'none';
+    // Clear global array
+    currentCommList = [];
+    // Clear table body
+    document.getElementById('commListBody').innerHTML = '';
+
+    // showToast("Filtro cambiado. Por favor carga la lista de nuevo.", "info");
 }

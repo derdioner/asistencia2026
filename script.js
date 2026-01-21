@@ -2491,6 +2491,7 @@ function sendWhatsAppMessage(phone, name, btnElement) {
 }
 
 // --- ROBOT MASS SEND ---
+// --- ROBOT MASS SEND ---
 async function sendAllComms() {
     const rawMsg = document.getElementById('commMessage').value;
     if (!rawMsg) {
@@ -2510,6 +2511,9 @@ async function sendAllComms() {
     let count = 0;
     const total = currentCommList.length;
 
+    // Greetings for humanization
+    const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
+
     for (let i = 0; i < total; i++) {
         const s = currentCommList[i];
 
@@ -2521,11 +2525,22 @@ async function sendAllComms() {
         }
 
         try {
+            // --- PERSONALIZATION LOGIC ---
+            // 1. Pick random greeting
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+            // 2. Construct personalized header: "*Hola JUAN PEREZ,*"
+            const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+
+            // 3. Combine parts: Header + User Message (NO FOOTER as requested)
+            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}`;
+
             await db.collection('mail_queue').add({
                 phone: s.p,
                 name: s.n,
-                message: rawMsg,
+                message: personalizedMessage,
                 status: 'pending',
+                type: 'mass', // LOW PRIORITY
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -2548,4 +2563,54 @@ async function sendAllComms() {
         btnAll.innerText = "✅ FINALIZADO";
         btnAll.style.background = "#ccc";
     }
+}
+
+// --- STOP / CLEAR QUEUE ---
+async function stopMassQueue() {
+    if (!confirm("🚨 ¿ESTÁS SEGURO DE DETENER EL ENVÍO?\n\nEsto borrará todos los mensajes 'Pendientes' de la cola. Los que ya están processando no se pueden detener.")) {
+        return;
+    }
+
+    const btn = document.getElementById('btnStopMass');
+    const originalText = btn ? btn.innerText : "🛑 DETENER / LIMPIAR";
+
+    if (btn) btn.innerText = "⏳ Limpiando...";
+
+    try {
+        const snapshot = await db.collection('mail_queue')
+            .where('status', '==', 'pending')
+            .get();
+
+        if (snapshot.empty) {
+            showToast("No hay mensajes pendientes para borrar.", "info");
+            if (btn) btn.innerText = originalText;
+            return;
+        }
+
+        const batch = db.batch();
+        let count = 0;
+        snapshot.forEach(doc => {
+            batch.delete(doc.ref);
+            count++;
+        });
+
+        await batch.commit();
+        showToast(`🛑 SE ELIMINARON ${count} MENSAJES PENDIENTES.`, "success");
+
+    } catch (e) {
+        console.error("Error clearing queue", e);
+        showToast("Error al limpiar cola: " + e.message, "error");
+    } finally {
+        if (btn) btn.innerText = originalText;
+    }
+}
+
+// --- RESET LIST ON FILTER CHANGE ---
+function resetCommList() {
+    // Hide the list container
+    document.getElementById('commListCard').style.display = 'none';
+    // Clear global array
+    currentCommList = [];
+    // Clear table body
+    document.getElementById('commListBody').innerHTML = '';
 }

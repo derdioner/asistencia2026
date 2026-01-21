@@ -498,7 +498,7 @@
                 <div class="row" style="gap: 10px; align-items: flex-end;">
                     <div style="flex: 1;">
                         <label>Filtrar Grado:</label>
-                        <select id="commGrade" class="input-field" style="margin-bottom: 0;">
+                        <select id="commGrade" class="input-field" style="margin-bottom: 0;" onchange="resetCommList()">
                             <option value="todos">Todos</option>
                             <option value="1">1ro</option>
                             <option value="2">2do</option>
@@ -509,7 +509,8 @@
                     </div>
                     <div style="flex: 1;">
                         <label>Filtrar Sección:</label>
-                        <select id="commSection" class="input-field" style="margin-bottom: 0;">
+                        <select id="commSection" class="input-field" style="margin-bottom: 0;"
+                            onchange="resetCommList()">
                             <option value="todos">Todas</option>
                             <option value="A">A</option>
                             <option value="B">B</option>
@@ -538,10 +539,16 @@
                         <strong style="color: #2e7d32;">🤖 Modo Robot:</strong>
                         <span style="font-size: 13px;">Envía todo automáticamente.</span>
                     </div>
-                    <button onclick="sendAllComms()" class="btn-primary"
-                        style="background: #2e7d32; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold;">
-                        🚀 ENVIAR TODO (ROBOT)
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="stopMassQueue()" class="btn-danger"
+                            style="border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; background: #D32F2F;">
+                            🛑 DETENER / LIMPIAR
+                        </button>
+                        <button onclick="sendAllComms()" class="btn-primary"
+                            style="background: #2e7d32; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold;">
+                            🚀 ENVIAR TODO (ROBOT)
+                        </button>
+                    </div>
                 </div>
 
                 <div class="table-responsive">
