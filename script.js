@@ -2443,6 +2443,14 @@ function renderCommunicationList(list) {
     tbody.innerHTML = '';
     countSpan.innerText = `(${list.length} destinatarios)`;
 
+    // RESET "SEND ALL" BUTTON STATE
+    const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
+    if (btnAll) {
+        btnAll.disabled = false;
+        btnAll.innerText = "🚀 ENVIAR TODO (ROBOT)";
+        btnAll.style.background = "#2e7d32";
+    }
+
     list.forEach((student, index) => {
         const tr = document.createElement('tr');
         tr.id = `row-${index}`; // Add ID for updating
