@@ -77,34 +77,39 @@ client.initialize();
 
 // --- LISTENER LOGIC (DISTRIBUTED WORKER) ---
 
+// --- LISTENER LOGIC (DISTRIBUTED WORKER) ---
+
 let isProcessing = false;
 let massCounter = 0;
+let latestSnapshot = null; // Cache the latest view of the queue
 
 function listenForMessages() {
     console.log(`👀 ${sessionName}: Monitor de cola activado.`);
 
-    // Listen to "pending" messages
-    // Note: All bots listen. The first one to "Claim" wins.
     db.collection('mail_queue')
         .where('status', '==', 'pending')
         .onSnapshot(snapshot => {
-            if (isProcessing) return; // Busy working? Ignore updates until free.
-
-            // Find a candidate?
-            if (!snapshot.empty) {
-                processQueueCandidate(snapshot);
-            }
+            latestSnapshot = snapshot; // Always update our view of reality
+            attemptToWork(); // Try to grab a job
         }, error => {
             console.error("❌ Error Firestore:", error);
         });
 }
 
-async function processQueueCandidate(snapshot) {
-    if (isProcessing) return;
+// Wrapper to safely check/start work
+function attemptToWork() {
+    if (isProcessing) return; // Busy? Do nothing.
+    if (!latestSnapshot || latestSnapshot.empty) return; // No work? Do nothing.
+
+    processQueueCandidate();
+}
+
+async function processQueueCandidate() {
+    if (isProcessing) return; // Double check
 
     // Convert snapshot to array
     const docs = [];
-    snapshot.forEach(doc => docs.push(doc));
+    latestSnapshot.forEach(doc => docs.push(doc));
 
     if (docs.length === 0) return;
 
@@ -118,51 +123,56 @@ async function processQueueCandidate(snapshot) {
     });
 
     // --- CLAIM LOOP ---
-    // Try to claim a message. If race lost, try the next one immediately.
     isProcessing = true;
     let claimedDocId = null;
     let claimedData = null;
 
-    for (const candidate of docs) {
-        // Double check local status before transaction overhead
-        if (candidate.data().status !== 'pending') continue;
+    try {
+        for (const candidate of docs) {
+            // Local check
+            if (candidate.data().status !== 'pending') continue;
 
-        try {
-            const didClaim = await db.runTransaction(async (t) => {
-                const docRef = db.collection('mail_queue').doc(candidate.id);
-                const doc = await t.get(docRef);
+            try {
+                const didClaim = await db.runTransaction(async (t) => {
+                    const docRef = db.collection('mail_queue').doc(candidate.id);
+                    const doc = await t.get(docRef);
 
-                if (!doc.exists) return false;
-                if (doc.data().status !== 'pending') return false; // Already taken
+                    if (!doc.exists) return false;
+                    if (doc.data().status !== 'pending') return false;
 
-                // Claim it!
-                t.update(docRef, {
-                    status: 'processing',
-                    processedBy: sessionName,
-                    pickedAt: admin.firestore.FieldValue.serverTimestamp()
+                    t.update(docRef, {
+                        status: 'processing',
+                        processedBy: sessionName,
+                        pickedAt: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    return true;
                 });
-                return true;
-            });
 
-            if (didClaim) {
-                claimedDocId = candidate.id;
-                claimedData = candidate.data();
-                break; // Exit loop, we got work!
-            } else {
-                console.log(`⚠️ ${sessionName}: Conflicto en ${candidate.data().name}. Intentando siguiente...`);
+                if (didClaim) {
+                    claimedDocId = candidate.id;
+                    claimedData = candidate.data();
+                    break; // Got work
+                }
+            } catch (e) {
+                console.error("Transaction Error:", e);
             }
-
-        } catch (e) {
-            console.error("Transaction Error:", e);
         }
-    }
 
-    if (claimedDocId && claimedData) {
-        console.log(`🔒 ${sessionName}: Mensaje reclamado (${claimedData.name}). Procesando...`);
-        await processMessageLogic(claimedDocId, claimedData);
-    } else {
-        // If we looped everything and got nothing, just relax.
+        if (claimedDocId && claimedData) {
+            console.log(`🔒 ${sessionName}: Mensaje reclamado (${claimedData.name}). Procesando...`);
+            await processMessageLogic(claimedDocId, claimedData);
+        }
+
+    } catch (e) {
+        console.error("Critical Worker Error:", e);
+    } finally {
         isProcessing = false;
+
+        // CRITICAL FIX:
+        // Immediately check if there is MORE work in the buffer.
+        // We don't wait for onSnapshot to fire again.
+        // Small delay to let other bots update DB if needed, but not strictly necessary.
+        setTimeout(attemptToWork, 1000);
     }
 }
 
