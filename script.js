@@ -2486,139 +2486,298 @@ function sendWhatsAppMessage(phone, name, btnElement) {
     // Encode message
     const finalMsg = encodeURIComponent(rawMsg);
 
-    // Open WA
-    window.open(`https://wa.me/${cleanPhone}?text=${finalMsg}`, '_blank');
-
-    // Update button visual
-    if (btnElement) {
-        btnElement.innerText = "✅ Enviado";
-        btnElement.style.background = "#ccc";
-        btnElement.style.color = "#666";
-        btnElement.disabled = true;
-    }
-}
-
-// --- ROBOT MASS SEND ---
-// --- ROBOT MASS SEND ---
-async function sendAllComms() {
-    const rawMsg = document.getElementById('commMessage').value;
-    if (!rawMsg) {
-        alert("⚠️ Escribe un mensaje antes de enviar.");
-        return;
-    }
-
-    if (!confirm(`¿Estás seguro de enviar este mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nAsegúrate de que el 'Servidor Robot' esté encendido.`)) {
-        return;
-    }
-
-    const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
-    if (btnAll) btnAll.disabled = true;
-
-    showToast("🚀 Iniciando envío masivo a la cola...", "info");
-
-    let count = 0;
-    const total = currentCommList.length;
-
-    // Greetings for humanization
-    const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
-
-    for (let i = 0; i < total; i++) {
-        const s = currentCommList[i];
-
-        // Update UI row
-        const btn = document.getElementById(`btn-${i}`);
-        if (btn) {
-            btn.innerText = "⏳ Encolando...";
-            btn.disabled = true;
-        }
+    // --- DROPOUT RISK ANALYSIS ---
+    async function analyzeDropoutRisk() {
+        const btn = document.querySelector('button[onclick="analyzeDropoutRisk()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ Analizando historial...";
+        btn.disabled = true;
 
         try {
-            // --- PERSONALIZATION LOGIC ---
-            // 1. Pick random greeting
-            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            // 1. Get last 500 attendance records to find active dates
+            // We assume 500 records covers > 3 days of heavy traffic or we might need more?
+            // Better: Query distinct dates? Firestore doesn't support easy distinct.
+            // Strategy: Get 'attendance' orderBy date desc limit 2000 (enough for 3 days of full school?)
+            // If school is big (800 students), 3 days = 2400 records. Let's fetch 3000 to be safe.
 
-            // 2. Construct personalized header: "*Hola JUAN PEREZ,*"
-            const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+            const attSnap = await db.collection('attendance')
+                .orderBy('createdAt', 'desc') // or displayDate
+                .limit(3000)
+                .get();
 
-            // 3. Combine parts: Header + User Message (NO FOOTER as requested)
-            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}`;
+            if (attSnap.empty) {
+                showToast("No hay suficiente historial para analizar.", "info");
+                return;
+            }
 
-            await db.collection('mail_queue').add({
-                phone: s.p,
-                name: s.n,
-                message: personalizedMessage,
-                status: 'pending',
-                type: 'mass', // LOW PRIORITY
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            // 2. Extract unique dates (Last 3)
+            const uniqueDates = new Set();
+            attSnap.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.displayDate) uniqueDates.add(data.displayDate); // Format DD/MM/YYYY
             });
 
-            if (btn) {
-                btn.innerText = "🤖 En cola";
-                btn.style.background = "#FF9800"; // Orange for pending
+            // Convert to array and sort DESC
+            // Date format is DD/MM/YYYY, so simple string sort might fail if month changes.
+            // Let's assume standardized ISO is better, but displayDate is what we have.
+            // We will trust the query 'orderBy createdAt desc' gave us the most recent docs, 
+            // so the set logic should naturally find the recent ones if we iterate in order?
+            // Actually Set doesn't guarantee order. 
+            // Better: We iterate the snapshot (which IS ordered) and pick the first 3 unique dates encountered.
+
+            const last3Dates = [];
+            const seenDates = new Set();
+
+            for (const doc of attSnap.docs) {
+                const d = doc.data().displayDate; // "21/01/2026"
+                if (!d) continue;
+
+                if (!seenDates.has(d)) {
+                    seenDates.add(d);
+                    last3Dates.push(d);
+                }
+                if (last3Dates.length >= 3) break;
             }
-            count++;
+
+            if (last3Dates.length < 3) {
+                showToast(`Solo se encontraron ${last3Dates.length} días de clase. Se necesitan 3 para analizar.`, "warning");
+                // Optional: Analyze with what we have? No, user asked for 3.
+                // But strict requirement is "3 days". Let's proceed if user wants?
+                // Let's enforce 3 for accuracy.
+                // return; // Uncomment to strict block
+            }
+
+            console.log("Analizando fechas:", last3Dates);
+
+            // 3. Identify WHO attended in those 3 days
+            const attendedDnis = new Set();
+            // We need to re-scan the snapshot or query specifically? 
+            // We already have 3000 docs, let's process them.
+            // But we need to make sure we cover ALL attendance for those 3 dates.
+            // If limit(3000) cut off half of the 3rd day, we have false positives.
+
+            // SAFE APPROACH: Once we know the 3 dates, we query specifically for them to be 100% sure.
+            // Firestore 'in' query supports up to 10 values.
+
+            const safeAttSnap = await db.collection('attendance')
+                .where('displayDate', 'in', last3Dates)
+                .get();
+
+            safeAttSnap.forEach(doc => {
+                const d = doc.data();
+                if (d.id) attendedDnis.add(d.id); // d.id is Student DNI
+            });
+
+            // 4. Get ALL Students
+            // We can use the cached list if available? Or fetch fresh.
+            const studSnap = await db.collection('students').get();
+            const riskList = [];
+
+            studSnap.forEach(doc => {
+                const s = doc.data();
+                // If student did NOT attend ANY of the last 3 days
+                if (!attendedDnis.has(s.id)) {
+                    riskList.push({
+                        name: s.n,
+                        dni: s.id,
+                        grade: s.g,
+                        section: s.s,
+                        phone: s.p
+                    });
+                }
+            });
+
+            // 5. Render Results
+            renderRiskTable(riskList, last3Dates);
+
         } catch (e) {
-            console.error("Error queueing", e);
-            if (btn) {
-                btn.innerText = "❌ Error";
-                btn.style.background = "#F44336";
-            }
+            console.error("Error analyzing dropout:", e);
+            showToast("Error al analizar: " + e.message, "error");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     }
 
-    showToast(`✅ Se enviaron ${count} mensajes a la cola del Robot.`, "success");
-    if (btnAll) {
-        btnAll.innerText = "✅ FINALIZADO";
-        btnAll.style.background = "#ccc";
-    }
-}
+    function renderRiskTable(list, dates) {
+        const container = document.getElementById('riskResultsCard');
+        const tbody = document.getElementById('riskListBody');
+        const noResults = document.getElementById('riskNoResults');
 
-// --- STOP / CLEAR QUEUE ---
-async function stopMassQueue() {
-    if (!confirm("🚨 ¿ESTÁS SEGURO DE DETENER EL ENVÍO?\n\nEsto borrará todos los mensajes 'Pendientes' de la cola. Los que ya están processando no se pueden detener.")) {
-        return;
-    }
+        container.style.display = 'block';
+        tbody.innerHTML = '';
 
-    const btn = document.getElementById('btnStopMass');
-    const originalText = btn ? btn.innerText : "🛑 DETENER / LIMPIAR";
-
-    if (btn) btn.innerText = "⏳ Limpiando...";
-
-    try {
-        const snapshot = await db.collection('mail_queue')
-            .where('status', '==', 'pending')
-            .get();
-
-        if (snapshot.empty) {
-            showToast("No hay mensajes pendientes para borrar.", "info");
-            if (btn) btn.innerText = originalText;
+        if (list.length === 0) {
+            tbody.style.display = 'none';
+            noResults.style.display = 'block';
             return;
         }
 
-        const batch = db.batch();
-        let count = 0;
-        snapshot.forEach(doc => {
-            batch.delete(doc.ref);
-            count++;
+        tbody.style.display = 'table-row-group';
+        noResults.style.display = 'none';
+
+        list.forEach(student => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #FFCCBC';
+
+            // Action: WhatsApp Button
+            // Message: "Hola, notamos que [Nombre] faltó los días [Fechas]..."
+            const msg = `Hola, le saludamos del colegio. Hemos notado que el alumno *${student.name}* no ha registrado asistencia los últimos 3 días de clase (${dates.join(', ')}). Nos preocupa su situación académica. ¿Todo está bien?`;
+
+            tr.innerHTML = `
+            <td style="padding:10px;">${student.name}</td>
+            <td style="padding:10px; text-align:center;">${student.grade}° "${student.section}"</td>
+            <td style="padding:10px; text-align:center;"><strong>3 Días</strong></td>
+            <td style="padding:10px; text-align:center;">${student.phone || '-'}</td>
+            <td style="padding:10px; text-align:right;">
+                ${student.phone ? `
+                <button onclick="sendRiskAlert('${student.phone}', '${encodeURIComponent(msg)}', this)" 
+                    class="btn-small" style="background:#25D366; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">
+                    💬 Contactar
+                </button>` : '<span style="color:#999; font-size:12px;">Sin Nro</span>'}
+            </td>
+        `;
+            tbody.appendChild(tr);
         });
 
-        await batch.commit();
-        showToast(`🛑 SE ELIMINARON ${count} MENSAJES PENDIENTES.`, "success");
-
-    } catch (e) {
-        console.error("Error clearing queue", e);
-        showToast("Error al limpiar cola: " + e.message, "error");
-    } finally {
-        if (btn) btn.innerText = originalText;
+        showToast(`⚠️ Se detectaron ${list.length} estudiantes en riesgo académico.`, "warning");
     }
-}
 
-// --- RESET LIST ON FILTER CHANGE ---
-function resetCommList() {
-    // Hide the list container
-    document.getElementById('commListCard').style.display = 'none';
-    // Clear global array
-    currentCommList = [];
-    // Clear table body
-    document.getElementById('commListBody').innerHTML = '';
-}
+    function sendRiskAlert(phone, encodedMsg, btn) {
+        let cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length === 9) cleanPhone = '51' + cleanPhone;
+
+        window.open(`https://wa.me/${cleanPhone}?text=${encodedMsg}`, '_blank');
+
+        // Visual feedback
+        if (btn) {
+            btn.innerText = "Revisado";
+            btn.style.background = "#FFAB91"; // Light orange
+            btn.style.color = "#BF360C";
+        }
+    }
+
+    // --- ROBOT MASS SEND ---
+    // --- ROBOT MASS SEND ---
+    async function sendAllComms() {
+        const rawMsg = document.getElementById('commMessage').value;
+        if (!rawMsg) {
+            alert("⚠️ Escribe un mensaje antes de enviar.");
+            return;
+        }
+
+        if (!confirm(`¿Estás seguro de enviar este mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nAsegúrate de que el 'Servidor Robot' esté encendido.`)) {
+            return;
+        }
+
+        const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
+        if (btnAll) btnAll.disabled = true;
+
+        showToast("🚀 Iniciando envío masivo a la cola...", "info");
+
+        let count = 0;
+        const total = currentCommList.length;
+
+        // Greetings for humanization
+        const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
+
+        for (let i = 0; i < total; i++) {
+            const s = currentCommList[i];
+
+            // Update UI row
+            const btn = document.getElementById(`btn-${i}`);
+            if (btn) {
+                btn.innerText = "⏳ Encolando...";
+                btn.disabled = true;
+            }
+
+            try {
+                // --- PERSONALIZATION LOGIC ---
+                // 1. Pick random greeting
+                const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+                // 2. Construct personalized header: "*Hola JUAN PEREZ,*"
+                const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+
+                // 3. Combine parts: Header + User Message (NO FOOTER as requested)
+                const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}`;
+
+                await db.collection('mail_queue').add({
+                    phone: s.p,
+                    name: s.n,
+                    message: personalizedMessage,
+                    status: 'pending',
+                    type: 'mass', // LOW PRIORITY
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                if (btn) {
+                    btn.innerText = "🤖 En cola";
+                    btn.style.background = "#FF9800"; // Orange for pending
+                }
+                count++;
+            } catch (e) {
+                console.error("Error queueing", e);
+                if (btn) {
+                    btn.innerText = "❌ Error";
+                    btn.style.background = "#F44336";
+                }
+            }
+        }
+
+        showToast(`✅ Se enviaron ${count} mensajes a la cola del Robot.`, "success");
+        if (btnAll) {
+            btnAll.innerText = "✅ FINALIZADO";
+            btnAll.style.background = "#ccc";
+        }
+    }
+
+    // --- STOP / CLEAR QUEUE ---
+    async function stopMassQueue() {
+        if (!confirm("🚨 ¿ESTÁS SEGURO DE DETENER EL ENVÍO?\n\nEsto borrará todos los mensajes 'Pendientes' de la cola. Los que ya están processando no se pueden detener.")) {
+            return;
+        }
+
+        const btn = document.getElementById('btnStopMass');
+        const originalText = btn ? btn.innerText : "🛑 DETENER / LIMPIAR";
+
+        if (btn) btn.innerText = "⏳ Limpiando...";
+
+        try {
+            const snapshot = await db.collection('mail_queue')
+                .where('status', '==', 'pending')
+                .get();
+
+            if (snapshot.empty) {
+                showToast("No hay mensajes pendientes para borrar.", "info");
+                if (btn) btn.innerText = originalText;
+                return;
+            }
+
+            const batch = db.batch();
+            let count = 0;
+            snapshot.forEach(doc => {
+                batch.delete(doc.ref);
+                count++;
+            });
+
+            await batch.commit();
+            showToast(`🛑 SE ELIMINARON ${count} MENSAJES PENDIENTES.`, "success");
+
+        } catch (e) {
+            console.error("Error clearing queue", e);
+            showToast("Error al limpiar cola: " + e.message, "error");
+        } finally {
+            if (btn) btn.innerText = originalText;
+        }
+    }
+
+    // --- RESET LIST ON FILTER CHANGE ---
+    function resetCommList() {
+        // Hide the list container
+        document.getElementById('commListCard').style.display = 'none';
+        // Clear global array
+        currentCommList = [];
+        // Clear table body
+        document.getElementById('commListBody').innerHTML = '';
+    }

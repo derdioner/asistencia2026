@@ -132,6 +132,7 @@
             <button class="tab-btn" onclick="openTab('reports')" id="tab-reports">📊 Reportes</button>
             <button class="tab-btn" onclick="openTab('comunicados')" id="tab-comunicados">📢 Comunicados</button>
             <button class="tab-btn" onclick="openTab('incidents')" id="tab-incidents">🚩 Incidencias</button>
+            <button class="tab-btn" onclick="openTab('riesgos')" id="tab-riesgos">📉 Riesgos</button>
             <button class="tab-btn" onclick="openTab('devices')" id="tab-devices" style="display:none;">📱
                 Dispositivos</button> <!-- Hidden for non-admins -->
         </nav>
@@ -477,6 +478,44 @@
                     style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #607D8B;">
                     📊 Descargar Historial de Incidencias (Excel)
                 </button>
+            </div>
+        </div>
+
+        <!-- RIESGOS ACADEMICOS SECTION -->
+        <div id="riesgos" class="tab-content">
+            <div class="card" style="background: #FFF3E0; border-left: 5px solid #FF9800;">
+                <h2 style="color: #E65100;">📉 Alerta de Deserción Escolar</h2>
+                <p style="color: #666; font-size: 14px;">
+                    Este módulo detecta automáticamente a los estudiantes que han faltado los últimos 3 días
+                    consecutivos de clases (Lunes a Viernes).
+                </p>
+                <button onclick="analyzeDropoutRisk()" class="btn-primary"
+                    style="margin-top: 15px; background: #FF9800; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(230, 81, 0, 0.3);">
+                    🔍 ANALIZAR RIESGO AHORA
+                </button>
+            </div>
+
+            <div class="card" id="riskResultsCard" style="display:none;">
+                <h3>⚠️ Estudiantes en Riesgo (3 Faltas Consecutivas)</h3>
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: #FFCCBC; color: #BF360C;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left;">Alumno</th>
+                                <th style="padding: 10px; text-align: center;">Grado/Sec</th>
+                                <th style="padding: 10px; text-align: center;">Ausencias</th>
+                                <th style="padding: 10px; text-align: center;">Celular</th>
+                                <th style="padding: 10px; text-align: right;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riskListBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <p id="riskNoResults" style="text-align: center; color: #666; padding: 20px; display: none;">
+                    ✅ ¡Excelente! No se encontraron alumnos con 3 faltas consecutivas recientes.
+                </p>
             </div>
         </div>
 
