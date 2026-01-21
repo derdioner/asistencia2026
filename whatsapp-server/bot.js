@@ -195,7 +195,14 @@ async function processMessageLogic(docId, data) {
     try {
         let phone = data.phone.replace(/\D/g, '');
         if (phone.length === 9) phone = '51' + phone;
-        const chatId = `${phone}@c.us`;
+
+        // VALIDATE NUMBER EXISTS ON WHATSAPP
+        const numberDetails = await client.getNumberId(phone);
+        if (!numberDetails) {
+            throw new Error("El número no existe en WhatsApp");
+        }
+
+        const chatId = numberDetails._serialized;
 
         // Typing simulation
         const chat = await client.getChatById(chatId);
