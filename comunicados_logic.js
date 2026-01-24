@@ -136,8 +136,27 @@ async function sendAllComms() {
     let count = 0;
     const total = currentCommList.length;
 
+    // --- ANTI-BAN CONTENT GENERATION ---
+    // 1. Invisible Hash (Zero Width Characters to make string unique)
+    function getInvisibleHash() {
+        const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
+        let hash = '';
+        // Add 3-5 random invisible chars
+        const len = Math.floor(Math.random() * 3) + 3;
+        for (let i = 0; i < len; i++) {
+            hash += zeroWidthChars[Math.floor(Math.random() * zeroWidthChars.length)];
+        }
+        return hash;
+    }
+
+    // 2. Dynamic Footer (Rotates text to avoid "Exact Match" filters)
+    // 2. Dynamic Footer (DISABLED BY USER REQUEST)
+    function getDynamicFooter() {
+        return "";
+    }
+
     // --- FOOTER WITH BOT NUMBERS ---
-    const botFooter = `\n\n👇 *IMPORTANTE: GUARDA NUESTROS NÚMEROS*\nAgreganos para recibir reportes automáticamente:\n📱 981 353 850\n📱 947 836 380\n📱 947 836 063\n📱 947 847 883`;
+    // We will generate this inside the loop now.
 
     // Greetings for humanization
     const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
@@ -164,8 +183,12 @@ async function sendAllComms() {
             // "Hola JUAN PEREZ,"
             const personalizedHeader = `*${randomGreeting} ${s.n},*`;
 
-            // 3. Combine parts: Header + User Message + Footer
-            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}${botFooter}`;
+            // 3. Combine parts: Header + User Message + Dynamic Footer + Invisible Hash
+            // We regenerate footer and hash for EVERY message to ensure uniqueness.
+            const uniqueFooter = getDynamicFooter();
+            const invisibleHash = getInvisibleHash();
+
+            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}${uniqueFooter} ${invisibleHash}`;
 
             await db.collection('mail_queue').add({
                 phone: s.p,

@@ -186,15 +186,24 @@ async function processMessageLogic(docId, data) {
         delay = Math.floor(Math.random() * 17000) + 8000;
         console.log(`🚑 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
     } else {
-        // Low Priority: 45s - 80s (Safety First)
-        delay = Math.floor(Math.random() * 35000) + 45000;
+        // Low Priority: 60s - 120s (Super Safe Mode)
+        delay = Math.floor(Math.random() * 60000) + 60000;
         console.log(`🐢 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
 
         // Batch Logic (Per Bot)
         massCounter++;
-        if (massCounter >= 20) {
-            console.log(`🛑 ${sessionName}: Descanso de 5 min...`);
-            await new Promise(r => setTimeout(r, 300000));
+        // Random batch size: 15 to 25 messages
+        const batchLimit = Math.floor(Math.random() * 10) + 15;
+
+        if (massCounter >= batchLimit) {
+            // Random break: 5 to 15 minutes
+            const breakTimeMin = Math.floor(Math.random() * 10) + 5;
+            const breakTimeMs = breakTimeMin * 60 * 1000;
+
+            console.log(`🛑 ${sessionName}: Límite de lote (${batchLimit}) alcanzado.`);
+            console.log(`😴 ${sessionName}: Tomando siesta larga de ${breakTimeMin} minutos...`);
+
+            await new Promise(r => setTimeout(r, breakTimeMs));
             massCounter = 0;
         }
     }
