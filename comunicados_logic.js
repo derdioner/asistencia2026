@@ -117,108 +117,116 @@ function sendWhatsAppMessage(phone, name, btnElement) {
 }
 
 // --- ROBOT MASS SEND ---
+// --- DEBUG LOAD ---
+console.log("✅ comunicados_logic.js cargado correctamente.");
+
+// --- ROBOT MASS SEND ---
 async function sendAllComms() {
-    const rawMsg = document.getElementById('commMessage').value;
-    if (!rawMsg) {
-        alert("⚠️ Escribe un mensaje antes de enviar.");
-        return;
-    }
-
-    if (!confirm(`¿Estás seguro de enviar este mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nAsegúrate de que el 'Servidor Robot' esté encendido.`)) {
-        return;
-    }
-
-    const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
-    if (btnAll) btnAll.disabled = true;
-
-    showToast("🚀 Iniciando envío masivo a la cola...", "info");
-
-    let count = 0;
-    const total = currentCommList.length;
-
-    // --- ANTI-BAN CONTENT GENERATION ---
-    // 1. Invisible Hash (Zero Width Characters to make string unique)
-    function getInvisibleHash() {
-        const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
-        let hash = '';
-        // Add 3-5 random invisible chars
-        const len = Math.floor(Math.random() * 3) + 3;
-        for (let i = 0; i < len; i++) {
-            hash += zeroWidthChars[Math.floor(Math.random() * zeroWidthChars.length)];
-        }
-        return hash;
-    }
-
-    // 2. Dynamic Footer (Rotates text to avoid "Exact Match" filters)
-    // 2. Dynamic Footer (DISABLED BY USER REQUEST)
-    function getDynamicFooter() {
-        return "";
-    }
-
-    // --- FOOTER WITH BOT NUMBERS ---
-    // We will generate this inside the loop now.
-
-    // Greetings for humanization
-    const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
-
-    // Batch add to Firestore
-    const batchSize = 100; // Firestore batch limit varies, but we'll add one by one or promises for simplicity in this context
-
-    for (let i = 0; i < total; i++) {
-        const s = currentCommList[i];
-
-        // Update UI row
-        const btn = document.getElementById(`btn-${i}`);
-        if (btn) {
-            btn.innerText = "⏳ Encolando...";
-            btn.disabled = true;
+    console.log("Attempting to send all comms...");
+    try {
+        const rawMsg = document.getElementById('commMessage').value;
+        if (!rawMsg) {
+            alert("⚠️ Escribe un mensaje antes de enviar.");
+            return;
         }
 
-        try {
-            // --- PERSONALIZATION LOGIC ---
-            // 1. Pick random greeting
-            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+        if (!db) {
+            alert("Error: No hay conexión con la base de datos (db undefined).");
+            return;
+        }
 
-            // 2. Construct personalized header
-            // "Hola JUAN PEREZ,"
-            const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+        if (currentCommList.length === 0) {
+            alert("⚠️ La lista de destinatarios está vacía. Carga la lista primero.");
+            return;
+        }
 
-            // 3. Combine parts: Header + User Message + Dynamic Footer + Invisible Hash
-            // We regenerate footer and hash for EVERY message to ensure uniqueness.
-            const uniqueFooter = getDynamicFooter();
-            const invisibleHash = getInvisibleHash();
+        if (!confirm(`¿Estás seguro de enviar este mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nAsegúrate de que el 'Servidor Robot' esté encendido.`)) {
+            return;
+        }
 
-            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}${uniqueFooter} ${invisibleHash}`;
+        const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
+        if (btnAll) btnAll.disabled = true;
 
-            await db.collection('mail_queue').add({
-                phone: s.p,
-                name: s.n,
-                message: personalizedMessage,
-                status: 'pending',
-                type: 'mass', // LOW PRIORITY
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+        showToast("🚀 Iniciando envío masivo a la cola...", "info");
 
+        let count = 0;
+        const total = currentCommList.length;
+
+        // Greetings for humanization
+        const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
+
+        for (let i = 0; i < total; i++) {
+            const s = currentCommList[i];
+
+            // Update UI row
+            const btn = document.getElementById(`btn-${i}`);
             if (btn) {
-                btn.innerText = "🤖 En cola";
-                btn.style.background = "#FF9800"; // Orange for pending
+                btn.innerText = "⏳ Encolando...";
+                btn.disabled = true;
             }
-            count++;
-        } catch (e) {
-            console.error("Error queueing", e);
-            if (btn) {
-                btn.innerText = "❌ Error";
-                btn.style.background = "#F44336";
+
+            try {
+                // --- PERSONALIZATION LOGIC ---
+                // 1. Pick random greeting
+                const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+                // 2. Construct personalized header
+                // "Hola JUAN PEREZ,"
+                const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+
+                // 3. Combine parts: Header + User Message + Dynamic Footer + Invisible Hash
+                // We regenerate footer and hash for EVERY message to ensure uniqueness.
+                const uniqueFooter = ""; // getDynamicFooter(); // Disabled
+                const invisibleHash = getInvisibleHash();
+
+                const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}${uniqueFooter} ${invisibleHash}`;
+
+                await db.collection('mail_queue').add({
+                    phone: s.p,
+                    name: s.n,
+                    message: personalizedMessage,
+                    status: 'pending',
+                    type: 'mass', // LOW PRIORITY
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                if (btn) {
+                    btn.innerText = "🤖 En cola";
+                    btn.style.background = "#FF9800"; // Orange for pending
+                }
+                count++;
+            } catch (e) {
+                console.error("Error queueing", e);
+                if (btn) {
+                    btn.innerText = "❌ Error";
+                    btn.style.background = "#F44336";
+                }
             }
         }
-    }
 
-    showToast(`✅ Se enviaron ${count} mensajes a la cola del Robot.`, "success");
-    if (btnAll) {
-        btnAll.innerText = "✅ FINALIZADO";
-        btnAll.style.background = "#ccc";
+        showToast(`✅ Se enviaron ${count} mensajes a la cola del Robot.`, "success");
+        if (btnAll) {
+            btnAll.innerText = "✅ FINALIZADO";
+            btnAll.style.background = "#ccc";
+        }
+    } catch (globalError) {
+        console.error("FATAL ERROR in sendAllComms:", globalError);
+        alert("Error crítico al enviar: " + globalError.message);
     }
 }
+
+// Helper functions moved out to avoid scope issues in some strict modes (optional but safer)
+function getInvisibleHash() {
+    const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
+    let hash = '';
+    // Add 3-5 random invisible chars
+    const len = Math.floor(Math.random() * 3) + 3;
+    for (let i = 0; i < len; i++) {
+        hash += zeroWidthChars[Math.floor(Math.random() * zeroWidthChars.length)];
+    }
+    return hash;
+}
+
 
 // --- STOP / CLEAR QUEUE ---
 async function stopMassQueue() {
