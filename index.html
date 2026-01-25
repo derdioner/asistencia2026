@@ -583,7 +583,8 @@
                             style="border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; background: #D32F2F;">
                             🛑 DETENER / LIMPIAR
                         </button>
-                        <button onclick="sendAllComms()" class="btn-primary"
+                        <button id="btnMassSend" onclick="console.log('Click detectado en HTML'); startMassRobot()"
+                            class="btn-primary"
                             style="background: #2e7d32; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold;">
                             🚀 ENVIAR TODO (ROBOT)
                         </button>
@@ -701,7 +702,7 @@
             <br>
             <span style="font-size: 13px; color: #E1F5FE;">📞 Celular Institucional: <strong>+51 972 190
                     027</strong></span>
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.43 (Seguro) - PATCH 2</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.44 (Fixed Mass Button)</span>
         </footer>
     </div>
 
@@ -734,8 +735,8 @@
 
     <!-- Debug Button Removed -->
 
-    <script src="script.js?v=26.43"></script>
-    <script src="comunicados_logic.js?v=26.43"></script>
+    <script src="script.js?v=26.44"></script>
+    <script src="comunicados_logic.js?v=26.44"></script>
 </body>
 
 </html>

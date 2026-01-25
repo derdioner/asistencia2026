@@ -117,30 +117,40 @@ function sendWhatsAppMessage(phone, name, btnElement) {
 }
 
 // Force global scope availability
-window.sendAllComms = sendAllComms;
+window.startMassRobot = startMassRobot; // RENAMED
 window.stopMassQueue = stopMassQueue;
 window.loadCommunicationTargets = loadCommunicationTargets;
 window.sendWhatsAppMessage = sendWhatsAppMessage;
 
 // --- ROBOT MASS SEND ---
 // --- DEBUG LOAD ---
-console.log("✅ comunicados_logic.js cargado correctamente v26.43");
+console.log("✅ comunicados_logic.js cargado correctamente v26.44");
+
 // Optional: Auto-check button binding on load
 document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.querySelector('button[onclick="sendAllComms()"]');
+    const btn = document.getElementById('btnMassSend'); // USE ID
     if (btn) {
-        console.log("Found sendAllComms button, attaching listener explicitly.");
+        console.log("Found btnMassSend, attaching listener explicitly.");
         btn.addEventListener('click', (e) => {
-            e.preventDefault(); // Stop form submit if any
-            console.log("Button clicked via Listener");
-            sendAllComms();
+            // Don't preventDefault here heavily, but logging helps
+            console.log("Button 'btnMassSend' clicked via Listener");
+            // Function call is already in onclick, but this confirms binding
         });
+    } else {
+        console.warn("❌ Button btnMassSend NOT FOUND on load.");
     }
 });
 
 // --- ROBOT MASS SEND ---
-async function sendAllComms() {
-    console.log("Attempting to send all comms... (Function Called)");
+async function startMassRobot() {
+    console.log("🔥 startMassRobot FUNCTION EXECUTED 🔥");
+
+    // SAFETY CHECK: confirm DB visibility
+    if (typeof db === 'undefined') {
+        alert("CRITICAL ERROR: 'db' object is missing. Script.js did not load correcty or is disconnected.");
+        return;
+    }
+
     try {
         const rawMsg = document.getElementById('commMessage').value;
         if (!rawMsg) {
@@ -148,24 +158,21 @@ async function sendAllComms() {
             return;
         }
 
-        if (typeof db === 'undefined' || !db) {
-            alert("Error: No hay conexión con la base de datos (db undefined). Revisa tu internet o recarga.");
-            return;
-        }
-
+        // Check list availability
+        console.log("Current List:", currentCommList);
         if (!currentCommList || currentCommList.length === 0) {
-            alert("⚠️ La lista de destinatarios está vacía. Carga la lista primero.");
+            alert("⚠️ La lista de destinatarios parece vacía (Length 0). Intenta cargar la lista de nuevo.");
             return;
         }
 
-        if (!confirm(`¿Estás seguro de enviar este mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nAsegúrate de que el 'Servidor Robot' esté encendido.`)) {
+        if (!confirm(`🚀 CONFIRMACIÓN\n\n¿Enviar mensaje a ${currentCommList.length} personas?\n\nRequiere 'Servidor Robot' activo.`)) {
             return;
         }
 
-        const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
+        const btnAll = document.getElementById('btnMassSend');
         if (btnAll) btnAll.disabled = true;
 
-        showToast("🚀 Iniciando envío masivo a la cola...", "info");
+        showToast("🚀 Iniciando envío masivo...", "info");
 
         let count = 0;
         const total = currentCommList.length;
@@ -228,7 +235,7 @@ async function sendAllComms() {
             btnAll.style.background = "#ccc";
         }
     } catch (globalError) {
-        console.error("FATAL ERROR in sendAllComms:", globalError);
+        console.error("FATAL ERROR in startMassRobot:", globalError);
         alert("Error crítico al enviar: " + globalError.message);
     }
 }
