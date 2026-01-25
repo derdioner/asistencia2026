@@ -116,13 +116,31 @@ function sendWhatsAppMessage(phone, name, btnElement) {
     }
 }
 
+// Force global scope availability
+window.sendAllComms = sendAllComms;
+window.stopMassQueue = stopMassQueue;
+window.loadCommunicationTargets = loadCommunicationTargets;
+window.sendWhatsAppMessage = sendWhatsAppMessage;
+
 // --- ROBOT MASS SEND ---
 // --- DEBUG LOAD ---
-console.log("✅ comunicados_logic.js cargado correctamente.");
+console.log("✅ comunicados_logic.js cargado correctamente v26.43");
+// Optional: Auto-check button binding on load
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector('button[onclick="sendAllComms()"]');
+    if (btn) {
+        console.log("Found sendAllComms button, attaching listener explicitly.");
+        btn.addEventListener('click', (e) => {
+            e.preventDefault(); // Stop form submit if any
+            console.log("Button clicked via Listener");
+            sendAllComms();
+        });
+    }
+});
 
 // --- ROBOT MASS SEND ---
 async function sendAllComms() {
-    console.log("Attempting to send all comms...");
+    console.log("Attempting to send all comms... (Function Called)");
     try {
         const rawMsg = document.getElementById('commMessage').value;
         if (!rawMsg) {
@@ -130,12 +148,12 @@ async function sendAllComms() {
             return;
         }
 
-        if (!db) {
-            alert("Error: No hay conexión con la base de datos (db undefined).");
+        if (typeof db === 'undefined' || !db) {
+            alert("Error: No hay conexión con la base de datos (db undefined). Revisa tu internet o recarga.");
             return;
         }
 
-        if (currentCommList.length === 0) {
+        if (!currentCommList || currentCommList.length === 0) {
             alert("⚠️ La lista de destinatarios está vacía. Carga la lista primero.");
             return;
         }
