@@ -730,9 +730,9 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const greetings = [timeGreeting, "Estimado apoderado", "Saludos", "Hola qué tal", "Aviso de Asistencia"];
                 const pickGreeting = greetings[Math.floor(Math.random() * greetings.length)];
 
-                // --- 2. DEEP SPINTAX TEMPLATES (5 VARIATIONS) ---
-                // We pick a random template index (0-4)
-                const templateIdx = Math.floor(Math.random() * 5);
+                // --- 2. DEEP SPINTAX TEMPLATES (7 VARIATIONS) ---
+                // We pick a random template index (0-6)
+                const templateIdx = Math.floor(Math.random() * 7);
                 const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                 let coreMessage = "";
@@ -749,11 +749,17 @@ async function onScanSuccess(decodedText, decodedResult) {
                         case 2: // User Request: "Te informamos que..."
                             coreMessage = `Hola, te informamos que *${data.n}* ya registró su entrada correctamente a las ${timeString}.`;
                             break;
-                        case 3: // User Request: "El wambrillo..." (Colloquial)
-                            coreMessage = `Aviso: El wambrillo *${data.n}* ya está adentro del colegio. Hora de entrada: ${timeString}.`;
+                        case 3: // User Request: "El wambrillo..." (Modified)
+                            coreMessage = `El wambrillo *${data.n}* ya esta en nuestro fundo 🏫 vino a las ${timeString}.`;
                             break;
                         case 4: // Action Oriented
                             coreMessage = `✅ Registro Confirmado: *${data.n}* llegó al colegio (Hora: ${timeString}).`;
+                            break;
+                        case 5: // Jovencito (New)
+                            coreMessage = `Aviso: El jovencito(a) *${data.n}* ya hizo su presencia a las ${timeString}.`;
+                            break;
+                        case 6: // Hello (New)
+                            coreMessage = `Hello, *${data.n}* ya está en nuestras aulas, ingresó a ${timeString}.`;
                             break;
                     }
                 } else {
@@ -768,11 +774,17 @@ async function onScanSuccess(decodedText, decodedResult) {
                         case 2: // User Request: "Te informamos que..."
                             coreMessage = `Hola, te informamos que *${data.n}* ya salió de la institución a las ${timeString}.`;
                             break;
-                        case 3: // User Request: "El wambrillo..."
-                            coreMessage = `Aviso: El wambrillo *${data.n}* ya salió del colegio. Hora de salida: ${timeString}.`;
+                        case 3: // User Request: "El wambrillo..." (Modified)
+                            coreMessage = `EL WAMBRILLO *${data.n}* YA SE ESTA YENDO A CASITA, PREGUNTALE COMO LE FUÉ EN NUESTRO FUNDO`;
                             break;
                         case 4: // Action Oriented
                             coreMessage = `👋 Salida Confirmada: *${data.n}* ha partido a casa (Hora: ${timeString}).`;
+                            break;
+                        case 5: // Jovencito (Derived)
+                            coreMessage = `Aviso: El jovencito(a) *${data.n}* ya se retiró a su domicilio a las ${timeString}.`;
+                            break;
+                        case 6: // Bye Bye (New)
+                            coreMessage = `BYE BYE *${data.n}*, TE ESPERAMOS MAÑANA NUEVAMENTE TEMPRANO EN NUESTRAS AULAS`;
                             break;
                     }
                 }
