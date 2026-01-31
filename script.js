@@ -76,6 +76,11 @@ try {
         });
 
     console.log("Firebase conectado (con Persistencia)");
+
+    // ANONYMOUS AUTH (REQUIRED FOR WRITES)
+    firebase.auth().signInAnonymously().catch(function (error) {
+        console.error("Auth Error:", error);
+    });
 } catch (error) {
     console.warn("Error inicializando Firebase (¿Faltan las llaves?):", error);
     showToast("⚠️ Configura Firebase en script.js", "error");
@@ -672,6 +677,9 @@ async function onScanSuccess(decodedText, decodedResult) {
             .get();
 
         if (!duplicateCheck.empty) {
+            // DEBUG TRACE 1
+            alert("⚠️ ALERTA DEBUG: Se detectó DUPLICADO en base de datos. Saliendo sin enviar mensaje.");
+
             const modeText = currentScanMode === 'ingreso' ? 'asistencia' : 'salida';
             if (incidentData) {
                 playAlertSound();
@@ -682,6 +690,9 @@ async function onScanSuccess(decodedText, decodedResult) {
             }
             return;
         }
+
+        // DEBUG TRACE 2
+        // alert("✅ DEBUG: No es duplicado. Guardando asistencia...");
 
         await db.collection('attendance').add({
             name: data.n,
@@ -730,64 +741,20 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const greetings = [timeGreeting, "Estimado apoderado", "Saludos", "Hola qué tal", "Aviso de Asistencia"];
                 const pickGreeting = greetings[Math.floor(Math.random() * greetings.length)];
 
-                // --- 2. DEEP SPINTAX TEMPLATES (7 VARIATIONS) ---
-                // We pick a random template index (0-6)
+                // --- 2. DATA VERIFICATION MODE (Override) ---
+                // Requested format: "HOLA [NOMBRE], DNI [DNI], GRADO [GRADO] SECCION [SECCION], ESTAN CORRECTO TUS DATOS?"
+
+                let coreMessage = `HOLA ${data.n}, DNI ${data.id}, GRADO ${data.g} SECCION ${data.s}, ESTAN CORRECTO TUS DATOS?`;
+
+                // Commented out original logic for now
+                /*
                 const templateIdx = Math.floor(Math.random() * 7);
                 const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                let coreMessage = "";
-
                 if (currentScanMode === 'ingreso') {
-                    // INGRESO TEMPLATES
-                    switch (templateIdx) {
-                        case 0: // Formal Standard
-                            coreMessage = `${pickGreeting}, le informamos que el estudiante *${data.n}* ingresó al colegio a las ${timeString}.`;
-                            break;
-                        case 1: // Direct & Short
-                            coreMessage = `Asistencia: *${data.n}* acaba de marcar su entrada a las ${timeString}.`;
-                            break;
-                        case 2: // User Request: "Te informamos que..."
-                            coreMessage = `Hola, te informamos que *${data.n}* ya registró su entrada correctamente a las ${timeString}.`;
-                            break;
-                        case 3: // User Request: "El wambrillo..." (Modified)
-                            coreMessage = `El wambrillo *${data.n}* ya esta en nuestro fundo 🏫 vino a las ${timeString}.`;
-                            break;
-                        case 4: // Action Oriented
-                            coreMessage = `✅ Registro Confirmado: *${data.n}* llegó al colegio (Hora: ${timeString}).`;
-                            break;
-                        case 5: // Jovencito (New)
-                            coreMessage = `Aviso: El jovencito(a) *${data.n}* ya hizo su presencia a las ${timeString}.`;
-                            break;
-                        case 6: // Hello (New)
-                            coreMessage = `Hello, *${data.n}* ya está en nuestras aulas, ingresó a ${timeString}.`;
-                            break;
-                    }
-                } else {
-                    // SALIDA TEMPLATES
-                    switch (templateIdx) {
-                        case 0: // Formal Standard
-                            coreMessage = `${pickGreeting}, le informamos que el estudiante *${data.n}* se retiró del colegio a las ${timeString}.`;
-                            break;
-                        case 1: // Direct & Short
-                            coreMessage = `Asistencia: *${data.n}* acaba de marcar su salida a las ${timeString}.`;
-                            break;
-                        case 2: // User Request: "Te informamos que..."
-                            coreMessage = `Hola, te informamos que *${data.n}* ya salió de la institución a las ${timeString}.`;
-                            break;
-                        case 3: // User Request: "El wambrillo..." (Modified)
-                            coreMessage = `EL WAMBRILLO *${data.n}* YA SE ESTA YENDO A CASITA, PREGUNTALE COMO LE FUÉ EN NUESTRO FUNDO`;
-                            break;
-                        case 4: // Action Oriented
-                            coreMessage = `👋 Salida Confirmada: *${data.n}* ha partido a casa (Hora: ${timeString}).`;
-                            break;
-                        case 5: // Jovencito (Derived)
-                            coreMessage = `Aviso: El jovencito(a) *${data.n}* ya se retiró a su domicilio a las ${timeString}.`;
-                            break;
-                        case 6: // Bye Bye (New)
-                            coreMessage = `BYE BYE *${data.n}*, TE ESPERAMOS MAÑANA NUEVAMENTE TEMPRANO EN NUESTRAS AULAS`;
-                            break;
-                    }
+                   // ... retained in code comments if needed later ...
                 }
+                */
 
                 // --- 3. INVISIBLE HASH (Uniqueness) ---
                 const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
@@ -805,9 +772,11 @@ async function onScanSuccess(decodedText, decodedResult) {
                 let phone = data.p.replace(/\D/g, '');
                 if (phone.length === 9) phone = "51" + phone;
 
-                const waLink = `https://wa.me/${phone}?text=${encodedMsg}`;
-
                 const botMode = document.getElementById('botMode');
+
+                // DEBUG ALERT 1
+                alert(`Intento enviar a: ${phone}\nBotMode: ${botMode.checked}`);
+
                 if (botMode && botMode.checked) {
                     // QUEUE MODE (Offline Capable)
                     db.collection('mail_queue').add({
@@ -820,8 +789,12 @@ async function onScanSuccess(decodedText, decodedResult) {
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }).then(() => {
                         showToast("🤖 Mensaje encolado al Robot", "info");
+                        // DEBUG ALERT 2
+                        alert("✅ ¡EXITO! Mensaje guardado en Firebase (mail_queue).");
                     }).catch((err) => {
                         console.error("Error cola:", err);
+                        alert("❌ ERROR AL GUARDAR EN FIREBASE:\n" + err.message);
+
                         // Fallback check if offline
                         if (navigator.onLine === false) {
                             showToast("⏳ Sin Internet: Mensaje guardado localmente", "warning");
@@ -829,14 +802,16 @@ async function onScanSuccess(decodedText, decodedResult) {
                     });
                 } else {
                     // MANUAL MODE
-                    window.open(waLink, '_blank');
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
                 }
             } else {
+                alert(`⚠️ EL ALUMNO ${data.n} NO TIENE CELULAR VALIDO (Length: ${data.p ? data.p.length : 0})`);
                 showToast("⚠️ Sin número de apoderado para notificar", "info");
             }
         }
     } catch (e) {
         console.error("Error parsing/saving QR", e);
+        alert("❌ ERROR CRITICO:\n" + e.message);
         showToast("❌ Error al guardar: " + e.message, "error");
     }
 }
