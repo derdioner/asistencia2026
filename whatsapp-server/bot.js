@@ -62,21 +62,21 @@ client.on('qr', (qr) => {
 
 client.on('authenticated', () => {
     console.log(`🔑 ${sessionName}: AUTENTICADO CORRECTAMENTE`);
-    // Fallback: Start listening anyway after 5s, in case 'ready' plays hard to get
-    setTimeout(() => {
-        console.log(`⚠️ ${sessionName}: Forzando inicio de listener (Fallback)...`);
-        listenForMessages();
-    }, 5000);
 });
 
-client.on('auth_failure', msg => {
-    console.error(`❌ ${sessionName}: FALLO DE AUTENTICACIÓN`, msg);
-});
+let fallbackTimeout;
 
 client.on('ready', () => {
     console.log(`✅ ${sessionName}: LISTO Y CONECTADO. Esperando trabajo...`);
+    if (fallbackTimeout) clearTimeout(fallbackTimeout); // Cancel fallback if ready fires
     listenForMessages();
 });
+
+// Fallback only if ready doesn't fire
+fallbackTimeout = setTimeout(() => {
+    console.log(`⚠️ ${sessionName}: Forzando inicio de listener (Fallback por demora en 'ready')...`);
+    listenForMessages();
+}, 15000); // Increased to 15s to be safe
 
 client.initialize();
 
@@ -99,6 +99,11 @@ function listenForMessages() {
         }, error => {
             console.error("❌ Error Firestore:", error);
         });
+
+    // Heartbeat to show life in console
+    setInterval(() => {
+        console.log(`💓 ${sessionName}: Bot activo y esperando... (Latido)`);
+    }, 300000); // 5 minutes
 }
 
 // Wrapper to safely check/start work
@@ -234,7 +239,13 @@ async function processMessageLogic(docId, data) {
         const typingTime = Math.floor(Math.random() * 3000) + 2000;
         await new Promise(r => setTimeout(r, typingTime));
 
-        await client.sendMessage(chatId, data.message, { sendSeen: false });
+        // Timeout Promise Wrapper
+        const sendPromise = client.sendMessage(chatId, data.message, { sendSeen: false });
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Tiempo de espera agotado al enviar mensaje (45s)")), 45000)
+        );
+
+        await Promise.race([sendPromise, timeoutPromise]);
         console.log(`✅ ${sessionName}: ENVIADO -> ${data.name}`);
 
         // Mark done

@@ -847,7 +847,11 @@ function renderHistory() {
         return;
     }
 
-    currentAttendanceList.forEach(record => {
+    // LIMIT: Show only top 10
+    const limit = 10;
+    const recordsToShow = currentAttendanceList.slice(0, limit);
+
+    recordsToShow.forEach(record => {
         // Calculate status manually if missing or just use it
         let status = record.status;
         if (!status && record.timestamp) {
@@ -875,7 +879,9 @@ function renderHistory() {
         list.appendChild(row);
     });
 
-    document.getElementById('attendanceCount').innerText = `Últimos ${currentAttendanceList.length}`;
+    const total = currentAttendanceList.length;
+    const displaying = Math.min(total, limit);
+    document.getElementById('attendanceCount').innerText = `Mostrando ${displaying} de ${total}`;
 }
 
 async function clearHistory() {
