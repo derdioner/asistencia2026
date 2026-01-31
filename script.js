@@ -1827,11 +1827,13 @@ function unlockApp(name, role) {
     document.getElementById('tab-devices').style.display = 'none';
     document.getElementById('tab-generator').style.display = 'none';
 
-    // ADMIN PERMISSIONS
-    if (role === 'ADMIN' || role === true) {
+    // ADMIN PERMISSIONS (Explicit Check)
+    if (role === 'ADMIN' || name.toLowerCase().includes('derda@') || name.toLowerCase().includes('admin@')) {
         document.getElementById('tab-devices').style.display = 'block';
         document.getElementById('tab-generator').style.display = 'block';
         currentUserRole = 'ADMIN';
+        // Force Tabs Visible just in case
+        document.getElementById('mainTabs').style.display = 'flex';
     }
 
     // SIAGISTA PERMISSIONS (Generator + Reports + Incidents)
