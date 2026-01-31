@@ -62,6 +62,11 @@ client.on('qr', (qr) => {
 
 client.on('authenticated', () => {
     console.log(`🔑 ${sessionName}: AUTENTICADO CORRECTAMENTE`);
+    // Fallback: Start listening anyway after 5s, in case 'ready' plays hard to get
+    setTimeout(() => {
+        console.log(`⚠️ ${sessionName}: Forzando inicio de listener (Fallback)...`);
+        listenForMessages();
+    }, 5000);
 });
 
 client.on('auth_failure', msg => {

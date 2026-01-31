@@ -678,7 +678,7 @@ async function onScanSuccess(decodedText, decodedResult) {
 
         if (!duplicateCheck.empty) {
             // DEBUG TRACE 1
-            alert("⚠️ ALERTA DEBUG: Se detectó DUPLICADO en base de datos. Saliendo sin enviar mensaje.");
+            // alert("⚠️ ALERTA DEBUG: Se detectó DUPLICADO en base de datos. Saliendo sin enviar mensaje.");
 
             const modeText = currentScanMode === 'ingreso' ? 'asistencia' : 'salida';
             if (incidentData) {
@@ -775,7 +775,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const botMode = document.getElementById('botMode');
 
                 // DEBUG ALERT 1
-                alert(`Intento enviar a: ${phone}\nBotMode: ${botMode.checked}`);
+                // alert(`Intento enviar a: ${phone}\nBotMode: ${botMode.checked}`);
 
                 if (botMode && botMode.checked) {
                     // QUEUE MODE (Offline Capable)
@@ -790,10 +790,11 @@ async function onScanSuccess(decodedText, decodedResult) {
                     }).then(() => {
                         showToast("🤖 Mensaje encolado al Robot", "info");
                         // DEBUG ALERT 2
-                        alert("✅ ¡EXITO! Mensaje guardado en Firebase (mail_queue).");
+                        // alert("✅ ¡EXITO! Mensaje guardado en Firebase (mail_queue).");
                     }).catch((err) => {
                         console.error("Error cola:", err);
-                        alert("❌ ERROR AL GUARDAR EN FIREBASE:\n" + err.message);
+                        // alert("❌ ERROR AL GUARDAR EN FIREBASE:\n" + err.message);
+                        showToast("❌ Error al guardar (ver consola)", "error");
 
                         // Fallback check if offline
                         if (navigator.onLine === false) {
