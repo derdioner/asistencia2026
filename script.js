@@ -849,6 +849,11 @@ function renderHistory() {
 
     // LIMIT: Show only top 10
     const limit = 10;
+    // DEBUG ALERT
+    console.log("RENDER HISTORY CALLED. List size:", currentAttendanceList.length);
+    // Remove this alert later
+    // alert("SISTEMA ACTUALIZADO V26.59: Si ves esto, el límite de 10 funciona.");
+
     const recordsToShow = currentAttendanceList.slice(0, limit);
 
     recordsToShow.forEach(record => {
