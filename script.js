@@ -852,7 +852,7 @@ function renderHistory() {
     // DEBUG ALERT
     console.log("RENDER HISTORY CALLED. List size:", currentAttendanceList.length);
     // Remove this alert later
-    // alert("SISTEMA ACTUALIZADO V26.59: Si ves esto, el límite de 10 funciona.");
+    alert("📢 ALERTA DE SISTEMA (V26.60)\n\nSi ves este mensaje, la actualización SE APLICÓ CORRECTAMENTE.\n\nDeben verse solo 10 registros.");
 
     const recordsToShow = currentAttendanceList.slice(0, limit);
 
