@@ -171,7 +171,7 @@ async function diagnoseConnection() {
 
     } catch (error) {
         if (error.code === 'permission-denied') {
-            showToast("🔒 BLOQUEADO POR REGLAS DE SEGURIDAD. Revisa la consola de Firebase.", "error", 6000);
+            showToast("🔒 BLOQUEADO POR REGLAS (Permisos insuficientes).", "error", 6000);
         } else if (error.code === 'unavailable') {
             showToast("📡 SIN CONEXIÓN A INTERNET.", "error");
         } else {
@@ -1449,8 +1449,8 @@ function loadUsers() {
         });
     }, error => {
         console.error("Error loading users:", error);
-        tbody.innerHTML = `<tr><td colspan='5' style='color:red; text-align:center'>Error cargando usuarios: ${error.message}</td></tr>`;
-        showToast("Error de permisos o conexión", "error");
+        tbody.innerHTML = `<tr><td colspan='5' style='color:red; text-align:center'>Error: ${error.message}</td></tr>`;
+        showToast("Error de Sistema: " + error.code + " - " + error.message, "error", 10000); // Show full error
     });
 }
 
