@@ -11,7 +11,13 @@
             "**/.*",
             "**/node_modules/**",
             "whatsapp-server/**",
-            "INICIAR_ROBOT.bat"
+            "INICIAR_ROBOT.bat",
+            "*.bat",
+            "*.md",
+            "*.txt",
+            "*.log",
+            ".vscode",
+            "debug_*"
         ],
         "rewrites": [
             {

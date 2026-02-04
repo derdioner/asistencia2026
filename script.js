@@ -577,7 +577,7 @@ function startScanner() {
             .orderBy('timestamp', 'desc')
             .limit(200)
             .onSnapshot((snapshot) => {
-                const todayStr = new Date().toLocaleDateString();
+                const todayStr = getDisplayDate(new Date());
                 currentAttendanceList = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -630,7 +630,7 @@ async function onScanSuccess(decodedText, decodedResult) {
         if (!data.n || !data.id) throw new Error("QR Inválido");
 
         const now = new Date();
-        const todayDate = now.toLocaleDateString();
+        const todayDate = getDisplayDate(now);
 
         if (processedScans.has(data.id)) {
             const lastTime = processedScans.get(data.id);
@@ -849,11 +849,6 @@ function renderHistory() {
 
     // LIMIT: Show only top 10
     const limit = 10;
-    // DEBUG ALERT
-    console.log("RENDER HISTORY CALLED. List size:", currentAttendanceList.length);
-    // Remove this alert later
-    alert("📢 ALERTA DE SISTEMA (V26.60)\n\nSi ves este mensaje, la actualización SE APLICÓ CORRECTAMENTE.\n\nDeben verse solo 10 registros.");
-
     const recordsToShow = currentAttendanceList.slice(0, limit);
 
     recordsToShow.forEach(record => {
@@ -1611,46 +1606,12 @@ function renderQR(data) {
 // --- REPORTS DASHBOARD ---
 let attendanceChart = null;
 
-async function loadReports() {
-    if (!db) return;
-
-    // Ensure we have the latest data. 
-    // If scanner is running, 'currentAttendanceList' might be enough, but safest is to re-render from local cache.
-    // If empty, user might need to have visited scanner tab or we need to fetch.
-    // For now, let's reuse 'currentAttendanceList' assuming it contains today's data (limit 100).
-    // Better: If array is empty, try to fetch today's data.
-
-    // 1. Get Total Registered (Universe)
-    try {
-        const studentsSnap = await db.collection('students').get();
-        document.getElementById('reportRegistered').innerText = studentsSnap.size;
-    } catch (e) {
-        console.warn("Error counting students", e);
-        document.getElementById('reportRegistered').innerText = "-";
-    }
-
-    // 2. Attendance Stats
-    const total = currentAttendanceList.length;
-    let puntual = 0;
-    let tarde = 0;
-
-    currentAttendanceList.forEach(r => {
-        const st = r.status || (r.timestamp ? determineLateness(new Date(r.timestamp.seconds * 1000)) : 'Puntual');
-        if (st === 'Tardanza') tarde++;
-        else puntual++;
-    });
-
-    // Update Cards
-    document.getElementById('reportTotal').innerText = total;
-    document.getElementById('reportPuntual').innerText = puntual;
-    document.getElementById('reportTarde').innerText = tarde;
-
-    // Determine color
-    document.getElementById('reportPuntual').style.color = '#2E7D32';
-    document.getElementById('reportTarde').style.color = '#C62828';
-
-    // RENDER CHART
-    renderChart(puntual, tarde);
+// --- HELPER FOR DATE FORMAT (DD/MM/YYYY) ---
+function getDisplayDate(dateObj = new Date()) {
+    const d = dateObj.getDate().toString().padStart(2, '0');
+    const m = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const y = dateObj.getFullYear();
+    return `${d}/${m}/${y}`;
 }
 
 function renderChart(puntual, tarde) {
