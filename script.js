@@ -2107,30 +2107,10 @@ async function generateFilteredReport(autoPrint = false) {
     const secText = sectionVal === 'todos' ? 'Todas' : `"${sectionVal}"`;
     document.getElementById('printFilterSummary').innerText = `${displayDateFilter} | Grado: ${gradeText} | Sección: ${secText}`;
 
-    // --- DIAGNOSTICS: Force Visual Check ---
-    const debugPanel = document.createElement('div');
-    debugPanel.style.background = '#333';
-    debugPanel.style.color = '#0f0';
-    debugPanel.style.padding = '10px';
-    debugPanel.style.marginTop = '10px';
-    debugPanel.style.fontFamily = 'monospace';
-    debugPanel.style.fontSize = '12px';
-    debugPanel.innerHTML = `
-        <strong>[DIAGNÓSTICO EN VIVO]</strong><br>
-        Hora Sistema: "${new Date().toString()}"<br>
-        Input Value: "${document.getElementById('filterDate').value}"<br>
-        Filtro usado: "${displayDateFilter}"<br>
-        Resultados encontrados: ${filteredList.length}<br>
-        Total Raw Data (Sin filtrar grado/sec): ${attendanceData.length}<br>
-        <hr>
-        <em>Últimos 3 raw data:</em><br>
-        ${attendanceData.slice(0, 3).map(r => `${r.name} -> ${r.displayDate}`).join('<br>') || 'NADA'}
-    `;
+    // --- DIAGNOSTICS REMOVED ---
     const reportsTab = document.getElementById('reports');
-    // Clear old debugs
     const old = reportsTab.querySelectorAll('div[style*="background: #333"]');
     old.forEach(o => o.remove());
-    reportsTab.prepend(debugPanel);
 
     // Sort by Time
     filteredList.sort((a, b) => (a.displayTime > b.displayTime) ? 1 : -1);
