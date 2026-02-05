@@ -1788,7 +1788,9 @@ function verifyDeviceAccess(userEmail) {
 
 function processAdminEmail(email) {
     // Simple check for known admins if needed, or rely on device metadata
-    return true; // For now all approved devices act as admins until we refine roles
+    if (!email) return false;
+    const e = email.toLowerCase();
+    return (e.includes('derda@') || e.includes('admin@'));
 }
 
 function unlockApp(name, role) {
@@ -1814,7 +1816,9 @@ function unlockApp(name, role) {
     document.getElementById('tab-generator').style.display = 'none';
 
     // ADMIN PERMISSIONS (Explicit Check)
-    if (role === 'ADMIN' || name.toLowerCase().includes('derda@') || name.toLowerCase().includes('admin@')) {
+    // ADMIN PERMISSIONS (Explicit Check)
+    const lowerName = name.toLowerCase().trim();
+    if (role === 'ADMIN' || lowerName.includes('derda@') || lowerName.includes('admin@')) {
         document.getElementById('tab-devices').style.display = 'block';
         document.getElementById('tab-generator').style.display = 'block';
         currentUserRole = 'ADMIN';
