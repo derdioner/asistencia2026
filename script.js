@@ -128,15 +128,17 @@ function openTab(tabName) {
         // Ensure date is set before loading
         const dateInput = document.getElementById('filterDate');
         // FIX: valueAsDate uses UTC, causing 'tomorrow' bug. Use local YYYY-MM-DD.
-        if (!dateInput.value) {
-            try {
-                const now = new Date();
-                const y = now.getFullYear();
-                const m = (now.getMonth() + 1).toString().padStart(2, '0');
-                const d = now.getDate().toString().padStart(2, '0');
-                dateInput.value = `${y}-${m}-${d}`;
-            } catch (e) { console.error("Date init error", e); }
-        }
+        // FIX: Always force update to local time to prevent stale/incorrect cache
+        try {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = (now.getMonth() + 1).toString().padStart(2, '0');
+            const d = now.getDate().toString().padStart(2, '0');
+            dateInput.value = `${y}-${m}-${d}`;
+
+            // Log for diagnostics
+            console.log("Forced Date to:", `${y}-${m}-${d}`);
+        } catch (e) { console.error("Date init error", e); }
         loadReports();
     }
 
@@ -2115,6 +2117,8 @@ async function generateFilteredReport(autoPrint = false) {
     debugPanel.style.fontSize = '12px';
     debugPanel.innerHTML = `
         <strong>[DIAGNÓSTICO EN VIVO]</strong><br>
+        Hora Sistema: "${new Date().toString()}"<br>
+        Input Value: "${document.getElementById('filterDate').value}"<br>
         Filtro usado: "${displayDateFilter}"<br>
         Resultados encontrados: ${filteredList.length}<br>
         Total Raw Data (Sin filtrar grado/sec): ${attendanceData.length}<br>
