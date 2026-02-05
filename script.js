@@ -708,7 +708,7 @@ async function onScanSuccess(decodedText, decodedResult) {
         });
 
         // DEBUG: Confirm Save Date
-        // showToast(`💾 Guardado: ${todayDate}`, "info");
+        showToast(`💾 Guardado: ${todayDate}`, "info");
 
         const isBirthday = checkBirthday(data.dob);
 
@@ -1992,6 +1992,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const d = now.getDate().toString().padStart(2, '0');
     document.getElementById('filterDate').value = `${y}-${m}-${d}`;
 
+    // DEBUG: VISUAL CHECK OF DATE
+    // setTimeout(() => alert(`FECHA SISTEMA: ${now.toString()}\nFILTRO INICIAL: ${y}-${m}-${d}`), 2000);
+
     // Check if previously logged in? For security, always ask PIN on refresh.
     // logout(); // Ensure clean state
     // updateAuthDisplay(); // REMOVED: Function undefined and not needed
@@ -2036,7 +2039,7 @@ async function generateFilteredReport(autoPrint = false) {
     }
 
     // DEBUG: Confirm Date being searched
-    // showToast(`🔍 Buscando fecha: ${displayDateFilter}`, "info");
+    showToast(`🔍 Buscando fecha: ${displayDateFilter}`, "info");
 
     // --- 2. FILTER IN MEMORY (Grade/Section) ---
     // Firestore composite indexes might be needed for .where(G).where(S), so simple filter is safer for small sets.
