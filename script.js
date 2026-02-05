@@ -1982,9 +1982,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM LOADED v26.21");
     // alert("SISTEMA ACTUALIZADO v26.0 - Si ves esto, estás en la versión correcta.");
 
-    // Init Date input to Today
-    const todayISO = new Date().toISOString().split('T')[0];
-    document.getElementById('filterDate').value = todayISO;
+    // Init Date input to Today (LOCAL TIME FIX)
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = (now.getMonth() + 1).toString().padStart(2, '0');
+    const d = now.getDate().toString().padStart(2, '0');
+    document.getElementById('filterDate').value = `${y}-${m}-${d}`;
 
     // Check if previously logged in? For security, always ask PIN on refresh.
     // logout(); // Ensure clean state
