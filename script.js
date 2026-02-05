@@ -127,7 +127,14 @@ function openTab(tabName) {
     if (tabName === 'reports') {
         // Ensure date is set before loading
         const dateInput = document.getElementById('filterDate');
-        if (!dateInput.value) dateInput.valueAsDate = new Date();
+        // FIX: valueAsDate uses UTC, causing 'tomorrow' bug. Use local YYYY-MM-DD.
+        if (!dateInput.value) {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = (now.getMonth() + 1).toString().padStart(2, '0');
+            const d = now.getDate().toString().padStart(2, '0');
+            dateInput.value = `${y}-${m}-${d}`;
+        }
         loadReports();
     }
 
