@@ -129,11 +129,13 @@ function openTab(tabName) {
         const dateInput = document.getElementById('filterDate');
         // FIX: valueAsDate uses UTC, causing 'tomorrow' bug. Use local YYYY-MM-DD.
         if (!dateInput.value) {
-            const now = new Date();
-            const y = now.getFullYear();
-            const m = (now.getMonth() + 1).toString().padStart(2, '0');
-            const d = now.getDate().toString().padStart(2, '0');
-            dateInput.value = `${y}-${m}-${d}`;
+            try {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = (now.getMonth() + 1).toString().padStart(2, '0');
+                const d = now.getDate().toString().padStart(2, '0');
+                dateInput.value = `${y}-${m}-${d}`;
+            } catch (e) { console.error("Date init error", e); }
         }
         loadReports();
     }
@@ -715,7 +717,8 @@ async function onScanSuccess(decodedText, decodedResult) {
         });
 
         // DEBUG: Confirm Save Date
-        showToast(`💾 Guardado: ${todayDate}`, "info");
+        // DEBUG: Confirm Save Date
+        // showToast(`💾 Guardado: ${todayDate}`, "info");
 
         const isBirthday = checkBirthday(data.dob);
 
@@ -2046,7 +2049,8 @@ async function generateFilteredReport(autoPrint = false) {
     }
 
     // DEBUG: Confirm Date being searched
-    showToast(`🔍 Buscando fecha: ${displayDateFilter}`, "info");
+    // DEBUG: Confirm Date being searched
+    // showToast(`🔍 Buscando fecha: ${displayDateFilter}`, "info");
 
     // --- 2. FILTER IN MEMORY (Grade/Section) ---
     // Firestore composite indexes might be needed for .where(G).where(S), so simple filter is safer for small sets.
