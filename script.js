@@ -2158,6 +2158,38 @@ async function revokeAllDevices(manualTrigger = true) {
     }
 }
 
+async function deleteCollection(collectionPath) {
+    const collectionRef = db.collection(collectionPath);
+    const query = collectionRef.orderBy('__name__').limit(500);
+
+    return new Promise((resolve, reject) => {
+        deleteQueryBatch(db, query, resolve).catch(reject);
+    });
+}
+
+async function deleteQueryBatch(db, query, resolve) {
+    const snapshot = await query.get();
+
+    const batchSize = snapshot.size;
+    if (batchSize === 0) {
+        // When there are no documents left, we are done
+        resolve();
+        return;
+    }
+
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // Recurse on the next process tick, to avoid
+    // exploding the stack.
+    process.nextTick(() => {
+        deleteQueryBatch(db, query, resolve);
+    });
+}
+
 // Deprecated old loadReports, pointing to new one
 async function loadReports() {
     generateFilteredReport(false);
@@ -2829,118 +2861,4 @@ function sendWhatsAppMessage(phone, name, btnElement) {
     }
 } // Closing loadCommunicationTargets or outer block
 
-// --- RESTORED AUTHENTICATION LOGIC ---
-
-function handleLoginKey(event) {
-    if (event.key === 'Enter') attemptLogin();
-}
-
-async function attemptLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const pass = document.getElementById('loginPass').value;
-    const errorMsg = document.getElementById('loginError');
-
-    if (!email || !pass) {
-        if (errorMsg) {
-            errorMsg.style.display = 'block';
-            errorMsg.innerText = "Por favor completa todos los campos.";
-        }
-        return;
-    }
-
-    const btn = document.querySelector('button[onclick="attemptLogin()"]');
-    const originalText = btn ? btn.innerText : 'INGRESAR';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerText = "Verificando...";
-    }
-
-    try {
-        await firebase.auth().signInWithEmailAndPassword(email, pass);
-        // Listener will handle UI switch
-    } catch (error) {
-        console.error("Login Error:", error);
-        if (errorMsg) {
-            errorMsg.style.display = 'block';
-            errorMsg.innerText = "Error: " + error.message;
-        }
-        if (btn) {
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
-        if (typeof showToast === 'function') {
-            showToast("Error de acceso: " + error.message, "error");
-        } else {
-            alert("Error: " + error.message);
-        }
-    }
-}
-
-// Auth State Listener
-if (typeof firebase !== 'undefined' && firebase.auth) {
-    firebase.auth().onAuthStateChanged(user => {
-        const loginOverlay = document.getElementById('login-overlay');
-        const appContainer = document.getElementById('app-container');
-        const errorMsg = document.getElementById('loginError');
-
-        if (user) {
-            console.log("Sesión iniciada:", user.email);
-            if (loginOverlay) loginOverlay.style.display = 'none';
-            if (appContainer) appContainer.style.display = 'block';
-
-            const userDisplay = document.getElementById('userRoleDisplay');
-            if (userDisplay) userDisplay.innerText = user.email;
-
-            // Optional: Check device lock here if needed
-            checkDevicePermission();
-
-            // Ensure scanner is running if on scanner tab
-            if (document.getElementById('scanner') && document.getElementById('scanner').classList.contains('active')) {
-                if (typeof startScanner === 'function') startScanner();
-            }
-        } else {
-            console.log("Sesión cerrada");
-            if (loginOverlay) loginOverlay.style.display = 'flex';
-            if (appContainer) appContainer.style.display = 'none';
-            if (typeof stopScanner === 'function') stopScanner();
-
-            // Reset button state if it was stuck
-            const btn = document.querySelector('button[onclick="attemptLogin()"]');
-            if (btn) {
-                btn.disabled = false;
-                btn.innerText = 'INGRESAR';
-            }
-        }
-    });
-} else {
-    console.error("Firebase Auth not loaded");
-}
-
-async function logout() {
-    if (confirm("¿Cerrar sesión?")) {
-        try {
-            await firebase.auth().signOut();
-            window.location.reload();
-        } catch (e) {
-            window.location.reload();
-        }
-    }
-}
-
-// Stub for missing Device Check
-function checkDevicePermission() {
-    const lockOverlay = document.getElementById('device-lock-overlay');
-    if (lockOverlay) lockOverlay.style.display = 'none'; // Auto-allow for now
-
-    // Also update approved list UI if needed
-    // if (typeof loadDevices === 'function') loadDevices();
-}
-
-function emergencyUnlock() {
-    const code = prompt("Código de Emergencia:");
-    if (code === "2026") {
-        document.getElementById('device-lock-overlay').style.display = 'none';
-    } else {
-        alert("Código incorrecto");
-    }
-}
+// --- END OF SCRIPT ---
