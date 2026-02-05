@@ -694,7 +694,7 @@ async function onScanSuccess(decodedText, decodedResult) {
         // DEBUG TRACE 2
         // alert("✅ DEBUG: No es duplicado. Guardando asistencia...");
 
-        await db.collection('attendance').add({
+        const confirmSave = await db.collection('attendance').add({
             name: data.n,
             dni: data.id,
             grade: data.g,
@@ -706,6 +706,9 @@ async function onScanSuccess(decodedText, decodedResult) {
             status: determineLateness(now),
             type: currentScanMode
         });
+
+        // DEBUG: Confirm Save Date
+        // showToast(`💾 Guardado: ${todayDate}`, "info");
 
         const isBirthday = checkBirthday(data.dob);
 
@@ -2031,6 +2034,9 @@ async function generateFilteredReport(autoPrint = false) {
         showToast("Error cargando reporte", "error");
         return;
     }
+
+    // DEBUG: Confirm Date being searched
+    // showToast(`🔍 Buscando fecha: ${displayDateFilter}`, "info");
 
     // --- 2. FILTER IN MEMORY (Grade/Section) ---
     // Firestore composite indexes might be needed for .where(G).where(S), so simple filter is safer for small sets.
