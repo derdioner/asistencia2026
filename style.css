@@ -36,6 +36,12 @@ body {
     /* Hide scrollbar for cleaner look on mobile */
 }
 
+/* FORCE VISIBILITY FIX */
+.app-container[style*="flex"] .tab-nav,
+.app-container[style*="block"] .tab-nav {
+    display: flex !important;
+}
+
 .tab-btn {
     padding: 15px 20px;
     border: none;
