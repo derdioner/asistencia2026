@@ -759,7 +759,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                 // --- 2. DATA VERIFICATION MODE (Override) ---
                 // Requested format: "HOLA [NOMBRE], DNI [DNI], GRADO [GRADO] SECCION [SECCION], ESTAN CORRECTO TUS DATOS?"
 
-                let coreMessage = `HOLA ${data.n}, DNI ${data.id}, GRADO ${data.g} SECCION ${data.s}, ESTAN CORRECTO TUS DATOS?`;
+                let coreMessage = `HOLA ${data.n}, DNI ${data.id}, GRADO ${data.g} SECCION ${data.s}, por favor, puedes pasar a recoger tu PASE ESCOLAR QR a partir del Lunes 09 en horario de atención.`;
 
                 // Commented out original logic for now
                 /*
