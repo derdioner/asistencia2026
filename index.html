@@ -489,6 +489,51 @@
                 <p style="color: #666; font-size: 14px;">Busque al estudiante para registrar la entrega de su
                     credencial.</p>
 
+                <!-- NEW: DASHBOARD TOGGLE -->
+                <button onclick="toggleDeliveryStats()" class="btn-secondary"
+                    style="margin-top: 10px; width: 100%; background: #EDE7F6; color: #512DA8; border: 1px solid #D1C4E9;">
+                    📊 Ver Avance de Entregas (Estadísticas)
+                </button>
+
+                <div id="deliveryStatsPanel"
+                    style="display: none; margin-top: 15px; background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #eee;">
+                    <!-- SUMMARY -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div
+                            style="flex: 1; text-align: center; background: #E8F5E9; padding: 10px; border-radius: 8px;">
+                            <h4 style="margin:0; color: #2E7D32;">Entregados</h4>
+                            <span id="statDelivered" style="font-size: 20px; font-weight: bold;">0</span>
+                        </div>
+                        <div
+                            style="flex: 1; text-align: center; background: #E3F2FD; padding: 10px; border-radius: 8px;">
+                            <h4 style="margin:0; color: #1565C0;">Total</h4>
+                            <span id="statTotal" style="font-size: 20px; font-weight: bold;">0</span>
+                        </div>
+                        <div
+                            style="flex: 1; text-align: center; background: #FFF3E0; padding: 10px; border-radius: 8px;">
+                            <h4 style="margin:0; color: #E65100;">%</h4>
+                            <span id="statPercent" style="font-size: 20px; font-weight: bold;">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- TABLE BY SECTION -->
+                    <h4 style="margin-bottom: 5px; color: #555;">Avance por Aula</h4>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead style="background: #f5f5f5;">
+                                <tr>
+                                    <th style="text-align: left; padding: 8px;">Aula</th>
+                                    <th style="text-align: center; padding: 8px;">Avance</th>
+                                    <th style="text-align: right; padding: 8px;">%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deliveryStatsBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="row" style="align-items: flex-end; gap: 10px; margin-top: 15px;">
                     <div class="form-group" style="flex: 2;">
                         <label>DNI del Estudiante:</label>
@@ -800,9 +845,28 @@
     </div>
     </div>
 
-    <!-- Debug Button Removed -->
+    <!-- DELIVERY LIST MODAL -->
+    <div id="deliveryListModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
+        <div
+            style="background: white; width: 90%; max-width: 400px; max-height: 80vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;">
+            <div
+                style="padding: 15px; background: #673AB7; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="delListTitle" style="margin: 0;">Lista 5° A</h3>
+                <button onclick="document.getElementById('deliveryListModal').style.display='none'"
+                    style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 10px; overflow-y: auto; flex: 1;">
+                <div id="delListContent"></div>
+            </div>
+            <div style="padding: 10px; border-top: 1px solid #eee; text-align: right;">
+                <button onclick="document.getElementById('deliveryListModal').style.display='none'"
+                    class="btn-secondary" style="padding: 8px 15px;">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="script.js?v=26.71"></script>
+    <script src="script.js?v=26.72"></script>
     <script src="mass_sender_v2.js?v=1.0"></script>
 </body>
 

@@ -3051,5 +3051,168 @@ async function exportDeliveryReport() {
         const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
         if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
     }
+
+
+}
+
+// --- DELIVERY STATS DASHBOARD ---
+let deliveryStatsCache = null;
+
+function toggleDeliveryStats() {
+    const panel = document.getElementById('deliveryStatsPanel');
+    if (!panel) return;
+
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        loadDeliveryStats(); // Always refresh on open
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+async function loadDeliveryStats() {
+    const statsBtn = document.querySelector('button[onclick="toggleDeliveryStats()"]');
+    const originalText = statsBtn ? statsBtn.innerText : "📊 Ver Avance";
+
+    if (statsBtn) {
+        statsBtn.disabled = true;
+        statsBtn.innerText = "⏳ Cargando datos...";
+    }
+
+    try {
+        if (!db) throw new Error("No hay conexión a DB");
+
+        const snapshot = await db.collection('students').get();
+        if (snapshot.empty) {
+            showToast("No hay estudiantes registrados", "info");
+            return;
+        }
+
+        let total = 0;
+        let delivered = 0;
+        const statsMap = {}; // Key: "GRADE-SECTION"
+
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            total++;
+            const isDelivered = !!d.qr_delivered;
+            if (isDelivered) delivered++;
+
+            const key = `${d.g}-${d.s}`;
+            if (!statsMap[key]) {
+                statsMap[key] = {
+                    g: d.g,
+                    s: d.s,
+                    total: 0,
+                    delivered: 0,
+                    students: []
+                };
+            }
+
+            statsMap[key].total++;
+            if (isDelivered) statsMap[key].delivered++;
+            statsMap[key].students.push({ n: d.n, del: isDelivered });
+        });
+
+        // Store for modal
+        deliveryStatsCache = statsMap;
+
+        // Update Summary
+        document.getElementById('statTotal').innerText = total;
+        document.getElementById('statDelivered').innerText = delivered;
+        const p = total > 0 ? ((delivered / total) * 100).toFixed(1) : 0;
+        document.getElementById('statPercent').innerText = `${p}%`;
+
+        // Render Table
+        const tbody = document.getElementById('deliveryStatsBody');
+        tbody.innerHTML = "";
+
+        // Sort keys naturally (1-A, 1-B... 5-H)
+        Object.keys(statsMap).sort().forEach(key => {
+            const item = statsMap[key];
+            const pct = item.total > 0 ? Math.round((item.delivered / item.total) * 100) : 0;
+
+            // Color logic
+            let color = '#F44336'; // Red (<50%)
+            if (pct >= 50) color = '#FF9800'; // Orange
+            if (pct >= 80) color = '#4CAF50'; // Green
+            if (pct === 100) color = '#2E7D32'; // Dark Green
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                    <strong>${item.g}° ${item.s}</strong>
+                </td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; width: 50%;">
+                    <div style="font-size: 11px; text-align: center; margin-bottom: 2px;">
+                        ${item.delivered} de ${item.total}
+                    </div>
+                    <div style="background: #e0e0e0; height: 8px; width: 100%; border-radius: 4px; overflow: hidden;">
+                        <div style="background: ${color}; height: 100%; width: ${pct}%;"></div>
+                    </div>
+                </td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${color};">
+                    ${pct}%
+                </td>
+            `;
+            tr.style.cursor = "pointer";
+            tr.onclick = () => showDeliveryListModal(key);
+            tr.title = "Clic para ver lista de alumnos";
+
+            // Hover effect
+            tr.onmouseover = function () { this.style.backgroundColor = "#f9f9f9"; };
+            tr.onmouseout = function () { this.style.backgroundColor = "transparent"; };
+
+            tbody.appendChild(tr);
+        });
+
+        showToast("📊 Estadísticas actualizadas", "success");
+
+    } catch (e) {
+        console.error(e);
+        showToast("Error cargando estadísticas: " + e.message, "error");
+    } finally {
+        if (statsBtn) {
+            statsBtn.disabled = false;
+            statsBtn.innerText = originalText;
+        }
+    }
+}
+
+function showDeliveryListModal(key) {
+    if (!deliveryStatsCache || !deliveryStatsCache[key]) return;
+
+    const data = deliveryStatsCache[key];
+    const modal = document.getElementById('deliveryListModal');
+    const title = document.getElementById('delListTitle');
+    const content = document.getElementById('delListContent');
+
+    title.innerText = `Lista ${data.g}° ${data.s} (${data.delivered}/${data.total})`;
+    content.innerHTML = "";
+
+    // Sort Alphabetically
+    data.students.sort((a, b) => a.n.localeCompare(b.n));
+
+    data.students.forEach(s => {
+        const div = document.createElement('div');
+        div.style.padding = "8px 0";
+        div.style.borderBottom = "1px solid #eee";
+        div.style.display = "flex";
+        div.style.justifyContent = "space-between";
+        div.style.fontSize = "13px";
+
+        if (s.del) {
+            div.style.color = "#2E7D32";
+            div.style.fontWeight = "bold";
+            div.innerHTML = `<span>${s.n}</span> <span>✅ ENTREGADO</span>`;
+        } else {
+            div.style.color = "#666";
+            div.innerHTML = `<span>${s.n}</span> <span style="opacity: 0.5;">❌ Pendiente</span>`;
+        }
+
+        content.appendChild(div);
+    });
+
+    modal.style.display = 'flex';
 }
 
