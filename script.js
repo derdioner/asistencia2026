@@ -2979,3 +2979,9 @@ async function confirmDelivery() {
         btn.innerText = "✅ CONFIRMAR ENTREGA";
     }
 }
+
+// FORCE GLOBAL SCOPE
+window.searchStudentForDelivery = searchStudentForDelivery;
+window.confirmDelivery = confirmDelivery;
+
+console.log("✅ Script loaded v26.70 - Delivery Module Ready");
