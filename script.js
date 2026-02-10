@@ -2967,8 +2967,18 @@ async function confirmDelivery() {
         await currentDeliveryStudent.ref.update(updateData);
 
         showToast("¡Entrega Registrada!", "success");
-        currentDeliveryStudent = { ...currentDeliveryStudent, ...updateData };
-        renderDeliveryStudent(currentDeliveryStudent);
+
+        // UX IMPROVEMENT: Reset form for next student
+        setTimeout(() => {
+            const resCard = document.getElementById('deliveryResultCard');
+            const dniInp = document.getElementById('deliverySearchDni');
+
+            resCard.style.display = 'none'; // Hide result
+            pickerInp.value = "";          // Clear picker
+            dniInp.value = "";             // Clear search
+            currentDeliveryStudent = null; // Clear state
+            dniInp.focus();                // Ready for next
+        }, 1500); // Small delay to let user see "success"
 
     } catch (e) {
         console.error(e);
