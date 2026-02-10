@@ -3052,12 +3052,4 @@ async function exportDeliveryReport() {
         if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
     }
 }
-    } catch (e) {
-    console.error(e);
-    alert("Error exportando: " + e.message); // DEBUG
-    showToast("Error al exportar: " + e.message, "error");
-} finally {
-    const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
-    if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
-}
-}
+
