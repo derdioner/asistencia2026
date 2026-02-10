@@ -2982,3 +2982,63 @@ async function confirmDelivery() {
 // FORCE GLOBAL SCOPE
 window.searchStudentForDelivery = searchStudentForDelivery;
 window.confirmDelivery = confirmDelivery;
+window.exportDeliveryReport = exportDeliveryReport;
+
+async function exportDeliveryReport() {
+    if (!db) return;
+
+    try {
+        const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
+        if (btn) { btn.disabled = true; btn.innerText = "⏳ Generando..."; }
+
+        showToast("Generando reporte...", "info");
+
+        // Query students who have qr_delivered == true
+        const snapshot = await db.collection('students').where('qr_delivered', '==', true).get();
+
+        if (snapshot.empty) {
+            showToast("No hay entregas registradas aún.", "info");
+            if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        // BOM for Excel to read UTF-8 correctly
+        csvContent += "\uFEFF";
+        csvContent += "FECHA ENTREGA;HORA;DNI ALUMNO;ALUMNO;GRADO;SECCION;RECOGIDO POR (DNI);REGISTRADO POR\n";
+
+        snapshot.forEach(doc => {
+            const s = doc.data();
+            const d = s.qr_delivered_at ? new Date(s.qr_delivered_at) : new Date();
+
+            const dateStr = d.toLocaleDateString();
+            const timeStr = d.toLocaleTimeString();
+
+            // Sanitize
+            const name = (s.n || "").replace(/;/g, ",");
+            const grade = s.g || "";
+            const section = s.s || "";
+            const picker = s.qr_delivered_to || "";
+            const admin = s.qr_delivered_by || "";
+
+            csvContent += `${dateStr};${timeStr};${s.id};${name};${grade};${section};${picker};${admin}\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Reporte_Entregas_QR_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast("✅ Reporte descargado", "success");
+
+    } catch (e) {
+        console.error(e);
+        showToast("Error al exportar: " + e.message, "error");
+    } finally {
+        const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
+        if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
+    }
+}
