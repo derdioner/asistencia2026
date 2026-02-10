@@ -2874,7 +2874,6 @@ function sendWhatsAppMessage(phone, name, btnElement) {
 let currentDeliveryStudent = null;
 
 async function searchStudentForDelivery() {
-    alert("Iniciando búsqueda..."); // DEBUG
     const dniInp = document.getElementById('deliverySearchDni');
     const resCard = document.getElementById('deliveryResultCard');
     const dni = dniInp.value.trim();
@@ -2983,5 +2982,3 @@ async function confirmDelivery() {
 // FORCE GLOBAL SCOPE
 window.searchStudentForDelivery = searchStudentForDelivery;
 window.confirmDelivery = confirmDelivery;
-
-console.log("✅ Script loaded v26.70 - Delivery Module Ready");
