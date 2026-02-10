@@ -133,6 +133,7 @@
             <button class="tab-btn" onclick="openTab('comunicados')" id="tab-comunicados">📢 Comunicados</button>
             <button class="tab-btn" onclick="openTab('incidents')" id="tab-incidents">🚩 Incidencias</button>
             <button class="tab-btn" onclick="openTab('riesgos')" id="tab-riesgos">📉 Riesgos</button>
+            <button class="tab-btn" onclick="openTab('delivery')" id="tab-delivery">📦 Entrega QR</button>
             <button class="tab-btn" onclick="openTab('devices')" id="tab-devices" style="display:none;">📱
                 Dispositivos</button> <!-- Hidden for non-admins -->
         </nav>
@@ -478,6 +479,64 @@
                     style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #607D8B;">
                     📊 Descargar Historial de Incidencias (Excel)
                 </button>
+            </div>
+        </div>
+
+        <!-- DELIVERY QR SECTION -->
+        <div id="delivery" class="tab-content">
+            <div class="card" style="border-left: 5px solid #673AB7;">
+                <h2 style="color: #512DA8;">📦 Entrega de Carnets / QR</h2>
+                <p style="color: #666; font-size: 14px;">Busque al estudiante para registrar la entrega de su
+                    credencial.</p>
+
+                <div class="row" style="align-items: flex-end; gap: 10px; margin-top: 15px;">
+                    <div class="form-group" style="flex: 2;">
+                        <label>DNI del Estudiante:</label>
+                        <input type="text" id="deliverySearchDni" class="input-field" placeholder="Ingrese 8 dígitos"
+                            maxlength="8" style="margin-bottom:0;"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <button onclick="searchStudentForDelivery()" class="btn-primary"
+                            style="background: #673AB7; padding: 12px; height: 46px; width: 100%;">
+                            🔍 Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="deliveryResultCard" class="card" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h2 id="delResName" style="margin: 0; color: #333;">Juan Perez</h2>
+                        <p id="delResInfo" style="margin: 5px 0; color: #666;">5° Grado "A"</p>
+                    </div>
+                    <div id="delResStatus"
+                        style="padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 12px;"></div>
+                </div>
+
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+                <div id="deliveryActionPanel">
+                    <div class="form-group">
+                        <label>👤 ¿Quién recoge el carnet? (DNI):</label>
+                        <input type="text" id="deliveryPickerDni" class="input-field"
+                            placeholder="DNI de apoderado o alumno" maxlength="8"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                    </div>
+                    <button onclick="confirmDelivery()" id="btnConfirmDel" class="btn-primary"
+                        style="width: 100%; background: #4CAF50; padding: 15px; font-size: 16px;">
+                        ✅ CONFIRMAR ENTREGA
+                    </button>
+                </div>
+
+                <div id="deliveryInfoPanel"
+                    style="display: none; background: #E8F5E9; padding: 15px; border-radius: 8px;">
+                    <p style="margin: 0; color: #2E7D32; font-weight: bold;">
+                        <span style="font-size: 20px;">✓</span> Entregado correctamente.
+                    </p>
+                    <p id="deliveryDetailsText" style="margin: 5px 0 0 0; font-size: 13px; color: #555;"></p>
+                </div>
             </div>
         </div>
 

@@ -156,10 +156,17 @@ function openTab(tabName) {
     }
 
     if (tabName === 'comunicados') {
-        const msgArea = document.getElementById('commMessage');
         if (msgArea && !msgArea.value) {
             msgArea.value = "Estimado padre de familia, le saludamos de la I.E.E. Genaro Herrera. \n\nPor favor AGREGUE ESTE NÚMERO a sus contactos para recibir las notificaciones de asistencia y salida de su menor hijo(a) automáticamente.\n\nAtte. La Dirección";
         }
+    }
+
+    if (tabName === 'delivery') {
+        // Focus on search box
+        setTimeout(() => {
+            const inp = document.getElementById('deliverySearchDni');
+            if (inp) inp.focus();
+        }, 300);
     }
 }
 
@@ -2862,3 +2869,112 @@ function sendWhatsAppMessage(phone, name, btnElement) {
 } // Closing loadCommunicationTargets or outer block
 
 // --- END OF SCRIPT ---
+
+// --- DELIVERY QR LOGIC ---
+let currentDeliveryStudent = null;
+
+async function searchStudentForDelivery() {
+    const dniInp = document.getElementById('deliverySearchDni');
+    const resCard = document.getElementById('deliveryResultCard');
+    const dni = dniInp.value.trim();
+
+    if (dni.length !== 8) {
+        showToast("Ingrese un DNI válido de 8 dígitos", "info");
+        return;
+    }
+
+    resCard.style.display = 'none';
+    currentDeliveryStudent = null;
+
+    try {
+        if (typeof showToast === 'function') showToast("Buscando...", "info");
+        const snap = await db.collection('students').where('id', '==', dni).limit(1).get();
+
+        if (snap.empty) {
+            showToast("Estudiante no encontrado", "error");
+            return;
+        }
+
+        const doc = snap.docs[0];
+        currentDeliveryStudent = { ref: doc.ref, ...doc.data() };
+        renderDeliveryStudent(currentDeliveryStudent);
+        resCard.style.display = 'block';
+
+    } catch (e) {
+        console.error(e);
+        showToast("Error al buscar: " + e.message, "error");
+    }
+}
+
+function renderDeliveryStudent(student) {
+    document.getElementById('delResName').innerText = student.n;
+    document.getElementById('delResInfo').innerText = `${student.g}° Grado "${student.s}" - DNI: ${student.id}`;
+
+    const badge = document.getElementById('delResStatus');
+    const actionPanel = document.getElementById('deliveryActionPanel');
+    const infoPanel = document.getElementById('deliveryInfoPanel');
+    const detailsText = document.getElementById('deliveryDetailsText');
+    const pickerInp = document.getElementById('deliveryPickerDni');
+
+    if (student.qr_delivered) {
+        // Delivered
+        badge.innerText = "ENTREGADO";
+        badge.style.backgroundColor = "#C8E6C9";
+        badge.style.color = "#2E7D32";
+
+        actionPanel.style.display = 'none';
+        infoPanel.style.display = 'block';
+
+        const d = student.qr_delivered_at ? new Date(student.qr_delivered_at) : new Date();
+        detailsText.innerText = `Fecha: ${d.toLocaleString()}\nRecogido por: ${student.qr_delivered_to || '?'}`;
+    } else {
+        // Pending
+        badge.innerText = "PENDIENTE";
+        badge.style.backgroundColor = "#FFF9C4";
+        badge.style.color = "#FBC02D";
+
+        actionPanel.style.display = 'block';
+        infoPanel.style.display = 'none';
+        pickerInp.value = "";
+    }
+}
+
+async function confirmDelivery() {
+    if (!currentDeliveryStudent) return;
+
+    const pickerInp = document.getElementById('deliveryPickerDni');
+    const pickerDni = pickerInp.value.trim();
+    const btn = document.getElementById('btnConfirmDel');
+
+    if (pickerDni.length < 8) {
+        showToast("Ingrese el DNI de la persona que recoge.", "error");
+        return;
+    }
+
+    if (!confirm(`¿Confirmar entrega para ${currentDeliveryStudent.n}?`)) return;
+
+    try {
+        btn.disabled = true;
+        btn.innerText = "Guardando...";
+
+        const updateData = {
+            qr_delivered: true,
+            qr_delivered_at: new Date().toISOString(),
+            qr_delivered_to: pickerDni,
+            qr_delivered_by: myDeviceId || 'unknown_device'
+        };
+
+        await currentDeliveryStudent.ref.update(updateData);
+
+        showToast("¡Entrega Registrada!", "success");
+        currentDeliveryStudent = { ...currentDeliveryStudent, ...updateData };
+        renderDeliveryStudent(currentDeliveryStudent);
+
+    } catch (e) {
+        console.error(e);
+        showToast("Error al guardar: " + e.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "✅ CONFIRMAR ENTREGA";
+    }
+}
