@@ -1374,7 +1374,7 @@ async function registerNewSystemUser() {
 async function emergencyUnlock() {
     const code = prompt("🚨 ACCESO DE EMERGENCIA 🚨\n\nIngrese el código maestro para desbloquear este dispositivo inmediatamente:");
 
-    if (code === "339720") {
+    if (code === "4544613010") {
         if (!db || !myDeviceId) return alert("Error: No hay conexión o ID de dispositivo.");
 
         try {
