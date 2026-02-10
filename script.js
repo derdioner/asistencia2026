@@ -2995,8 +2995,7 @@ window.confirmDelivery = confirmDelivery;
 window.exportDeliveryReport = exportDeliveryReport;
 
 async function exportDeliveryReport() {
-    alert("Iniciando exportación..."); // DEBUG
-    if (!db) { alert("Error: DB no inicializada"); return; }
+    if (!db) { showToast("Base de datos no lista", "error"); return; }
 
     try {
         const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
@@ -3013,9 +3012,7 @@ async function exportDeliveryReport() {
             return;
         }
 
-        let csvContent = "data:text/csv;charset=utf-8,";
-        // BOM for Excel to read UTF-8 correctly
-        csvContent += "\uFEFF";
+        let csvContent = "\uFEFF"; // BOM
         csvContent += "FECHA ENTREGA;HORA;DNI ALUMNO;ALUMNO;GRADO;SECCION;RECOGIDO POR (DNI);REGISTRADO POR\n";
 
         snapshot.forEach(doc => {
@@ -3035,9 +3032,11 @@ async function exportDeliveryReport() {
             csvContent += `${dateStr};${timeStr};${s.id};${name};${grade};${section};${picker};${admin}\n`;
         });
 
-        const encodedUri = encodeURI(csvContent);
+        // Use Blob for robustness
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", url);
         link.setAttribute("download", `Reporte_Entregas_QR_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
         document.body.appendChild(link);
         link.click();
@@ -3047,10 +3046,18 @@ async function exportDeliveryReport() {
 
     } catch (e) {
         console.error(e);
-        alert("Error exportando: " + e.message); // DEBUG
         showToast("Error al exportar: " + e.message, "error");
     } finally {
         const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
         if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
     }
+}
+    } catch (e) {
+    console.error(e);
+    alert("Error exportando: " + e.message); // DEBUG
+    showToast("Error al exportar: " + e.message, "error");
+} finally {
+    const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
+    if (btn) { btn.disabled = false; btn.innerText = "📊 Descargar Reporte de Entregas (Excel)"; }
+}
 }
