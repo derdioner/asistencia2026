@@ -2985,7 +2985,8 @@ window.confirmDelivery = confirmDelivery;
 window.exportDeliveryReport = exportDeliveryReport;
 
 async function exportDeliveryReport() {
-    if (!db) return;
+    alert("Iniciando exportación..."); // DEBUG
+    if (!db) { alert("Error: DB no inicializada"); return; }
 
     try {
         const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
