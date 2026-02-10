@@ -3036,6 +3036,7 @@ async function exportDeliveryReport() {
 
     } catch (e) {
         console.error(e);
+        alert("Error exportando: " + e.message); // DEBUG
         showToast("Error al exportar: " + e.message, "error");
     } finally {
         const btn = document.querySelector('button[onclick="exportDeliveryReport()"]');
