@@ -337,6 +337,12 @@ async function generateQR() {
                     };
                     renderQR(qrData);
                     showToast("¡Datos Actualizados y QR Regenerado!", "success");
+
+                    // Clear fields like "Create New" flow
+                    nameInput.value = '';
+                    dniInput.value = '';
+                    phoneInput.value = '';
+                    nameInput.focus();
                     return;
                 } else {
                     const qrData = {
@@ -764,19 +770,12 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const pickGreeting = greetings[Math.floor(Math.random() * greetings.length)];
 
                 // --- 2. DATA VERIFICATION MODE (Override) ---
-                // Requested format: "HOLA [NOMBRE], DNI [DNI], GRADO [GRADO] SECCION [SECCION], ESTAN CORRECTO TUS DATOS?"
+                // Requested format: "HOLA, [NOMBRE] [DNI] [GRADO] Y [SECCION], ESTÁN CORRECTOS TUS DATOS?"
 
-                let coreMessage = `HOLA ${data.n}, DNI ${data.id}, GRADO ${data.g} SECCION ${data.s}, por favor, puedes pasar a recoger tu PASE ESCOLAR QR a partir del Lunes 09 en horario de atención.`;
+                let coreMessage = `HOLA, ${data.n} ${data.id} ${data.g} Y ${data.s}, ESTÁN CORRECTOS TUS DATOS?`;
 
-                // Commented out original logic for now
-                /*
-                const templateIdx = Math.floor(Math.random() * 7);
-                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                if (currentScanMode === 'ingreso') {
-                   // ... retained in code comments if needed later ...
-                }
-                */
+                // Security measures text
+                const securityMsg = "\n\n(Mensaje generado automáticamente para validar asistencia y evitar bloqueo de chip por spam)";
 
                 // --- 3. INVISIBLE HASH (Uniqueness) ---
                 const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
@@ -789,7 +788,7 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const emojis = ["✅", "🏫", "🎒", "👋", "🕒", "✨", "📌"];
                 const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
 
-                const message = `${coreMessage} ${randomEmoji}${incidentMsg} ${invisibleHash}`;
+                const message = `${coreMessage} ${securityMsg} ${randomEmoji}${incidentMsg} ${invisibleHash}`;
                 const encodedMsg = encodeURIComponent(message);
                 let phone = data.p.replace(/\D/g, '');
                 if (phone.length === 9) phone = "51" + phone;

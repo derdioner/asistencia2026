@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qr-attendance-v26.72-stats';
+const CACHE_NAME = 'qr-attendance-v26.74-whatsapp-msg';
 const urlsToCache = [
     './',
     './index.html',

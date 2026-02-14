@@ -66,6 +66,15 @@ function renderCommunicationList(list) {
     tbody.innerHTML = '';
     countSpan.innerText = `(${list.length} destinatarios)`;
 
+    // --- FIX: RESET SEND ALL BUTTON ---
+    const btnAll = document.getElementById('btnMassSend');
+    if (btnAll) {
+        btnAll.disabled = false;
+        btnAll.innerText = "🚀 ENVIAR TODO (ROBOT)";
+        btnAll.style.background = "#2e7d32";
+        btnAll.style.color = "white";
+    }
+
     list.forEach((student, index) => {
         const tr = document.createElement('tr');
         tr.id = `row-${index}`; // Add ID for updating
@@ -141,156 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- ROBOT MASS SEND ---
-async function startMassRobot() {
-    console.log("🔥 startMassRobot FUNCTION EXECUTED 🔥");
-
-    // SAFETY CHECK: confirm DB visibility
-    if (typeof db === 'undefined') {
-        alert("CRITICAL ERROR: 'db' object is missing. Script.js did not load correcty or is disconnected.");
-        return;
-    }
-
-    try {
-        const rawMsg = document.getElementById('commMessage').value;
-        if (!rawMsg) {
-            alert("⚠️ Escribe un mensaje antes de enviar.");
-            return;
-        }
-
-        // Check list availability
-        console.log("Current List:", currentCommList);
-        if (!currentCommList || currentCommList.length === 0) {
-            alert("⚠️ La lista de destinatarios parece vacía (Length 0). Intenta cargar la lista de nuevo.");
-            return;
-        }
-
-        if (!confirm(`🚀 CONFIRMACIÓN\n\n¿Enviar mensaje a ${currentCommList.length} personas?\n\nRequiere 'Servidor Robot' activo.`)) {
-            return;
-        }
-
-        const btnAll = document.getElementById('btnMassSend');
-        if (btnAll) btnAll.disabled = true;
-
-        showToast("🚀 Iniciando envío masivo...", "info");
-
-        let count = 0;
-        const total = currentCommList.length;
-
-        // Greetings for humanization
-        const greetings = ["Hola", "Buen día", "Saludos", "Estimado(a)", "Hola qué tal"];
-
-        for (let i = 0; i < total; i++) {
-            const s = currentCommList[i];
-
-            // Update UI row
-            const btn = document.getElementById(`btn-${i}`);
-            if (btn) {
-                btn.innerText = "⏳ Encolando...";
-                btn.disabled = true;
-            }
-
-            try {
-                // --- PERSONALIZATION LOGIC ---
-                // 1. Pick random greeting
-                const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-
-                // 2. Construct personalized header
-                // "Hola JUAN PEREZ,"
-                const personalizedHeader = `*${randomGreeting} ${s.n},*`;
-
-                // 3. Combine parts: Header + User Message + Dynamic Footer + Invisible Hash
-                // We regenerate footer and hash for EVERY message to ensure uniqueness.
-                const uniqueFooter = ""; // getDynamicFooter(); // Disabled
-                const invisibleHash = getInvisibleHash();
-
-                const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}${uniqueFooter} ${invisibleHash}`;
-
-                await db.collection('mail_queue').add({
-                    phone: s.p,
-                    name: s.n,
-                    message: personalizedMessage,
-                    status: 'pending',
-                    type: 'mass', // LOW PRIORITY
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                if (btn) {
-                    btn.innerText = "🤖 En cola";
-                    btn.style.background = "#FF9800"; // Orange for pending
-                }
-                count++;
-            } catch (e) {
-                console.error("Error queueing", e);
-                if (btn) {
-                    btn.innerText = "❌ Error";
-                    btn.style.background = "#F44336";
-                }
-            }
-        }
-
-        showToast(`✅ Se enviaron ${count} mensajes a la cola del Robot.`, "success");
-        if (btnAll) {
-            btnAll.innerText = "✅ FINALIZADO";
-            btnAll.style.background = "#ccc";
-        }
-    } catch (globalError) {
-        console.error("FATAL ERROR in startMassRobot:", globalError);
-        alert("Error crítico al enviar: " + globalError.message);
-    }
-}
-
-// Helper functions moved out to avoid scope issues in some strict modes (optional but safer)
-function getInvisibleHash() {
-    const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
-    let hash = '';
-    // Add 3-5 random invisible chars
-    const len = Math.floor(Math.random() * 3) + 3;
-    for (let i = 0; i < len; i++) {
-        hash += zeroWidthChars[Math.floor(Math.random() * zeroWidthChars.length)];
-    }
-    return hash;
-}
-
-
-// --- STOP / CLEAR QUEUE ---
-async function stopMassQueue() {
-    if (!confirm("🚨 ¿ESTÁS SEGURO DE DETENER EL ENVÍO?\n\nEsto borrará todos los mensajes 'Pendientes' de la cola. Los que ya están processando no se pueden detener.")) {
-        return;
-    }
-
-    const btn = document.querySelector('button[onclick="stopMassQueue()"]');
-    if (btn) btn.innerText = "⏳ Limpiando...";
-
-    try {
-        const batchSize = 400;
-        const snapshot = await db.collection('mail_queue')
-            .where('status', '==', 'pending')
-            .get();
-
-        if (snapshot.empty) {
-            showToast("No hay mensajes pendientes para borrar.", "info");
-            if (btn) btn.innerText = "🛑 DETENER / LIMPIAR";
-            return;
-        }
-
-        const batch = db.batch();
-        let count = 0;
-        snapshot.forEach(doc => {
-            batch.delete(doc.ref);
-            count++;
-        });
-
-        await batch.commit();
-        showToast(`🛑 SE ELIMINARON ${count} MENSAJES PENDIENTES.`, "success");
-
-    } catch (e) {
-        console.error("Error clearing queue", e);
-        showToast("Error al limpiar cola: " + e.message, "error");
-    } finally {
-        if (btn) btn.innerText = "🛑 DETENER / LIMPIAR";
-    }
-}
+// --- MASS SENDER FUNCTIONS REMOVED ---
+// Logic moved to: mass_sender_v2.js for better management and updates.
+// See: startMassRobot() in mass_sender_v2.js
 
 // --- RESET LIST ON FILTER CHANGE ---
 function resetCommList() {

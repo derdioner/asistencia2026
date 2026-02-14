@@ -1,17 +1,30 @@
 
 // --- MASS SENDER V2 ---
-console.log("🔥 mass_sender_v2.js LOADED 🔥");
+console.log("🔥 mass_sender_v2.js LOADED (V1.2) 🔥");
+// alert("DEBUG: mass_sender_v2.js ha cargado correctamente."); // Uncomment if needed for extreme debugging
 
 // Force global binding
 window.startMassRobot = startMassRobot;
 
-if (typeof currentCommList === 'undefined') {
-    console.warn("⚠️ currentCommList is undefined on load. script.js might be slow.");
-    window.currentCommList = [];
-}
+// Robust Event Listener Binding
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btnMassSend');
+    if (btn) {
+        console.log("✅ Button 'btnMassSend' found. Attaching listener.");
+        btn.onclick = null; // Clear HTML attribute to avoid double call
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log("🖱️ Click detectado por EventListener JS");
+            startMassRobot();
+        });
+    } else {
+        console.warn("⚠️ Button 'btnMassSend' NOT FOUND in DOM on load.");
+    }
+});
 
 async function startMassRobot() {
     console.log("🔥 startMassRobot FUNCTION EXECUTED 🔥");
+    // alert("🔥 startMassRobot INICIADO 🔥"); // Visual confirmation for user
 
     // Check DB
     if (typeof db === 'undefined' || !db) {
@@ -63,8 +76,16 @@ async function startMassRobot() {
         }
 
         try {
+            // --- PERSONALIZATION LOGIC (V3 - Emojis & Details) ---
+            const greetings = ["HOLA", "BUEN DÍA", "SALUDOS", "ESTIMADO(A)", "HOLA QUÉ TAL"];
+            const emojis = ["✅", "🏫", "🎒", "👋", "🕒", "✨", "📌"];
+
             const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-            const personalizedHeader = `*${randomGreeting} ${s.n},*`;
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+            // Header: *✅ HOLA JUAN PEREZ*
+            // Details: DNI: 12345678 | AULA: 5° "A"
+            const personalizedHeader = `*${randomEmoji} ${randomGreeting} ${s.n}*\nDNI: ${s.id || 'S/D'} | AULA: ${s.g}° "${s.s}"`;
 
             const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
             let invisibleHash = '';
@@ -73,7 +94,7 @@ async function startMassRobot() {
                 invisibleHash += zeroWidthChars[Math.floor(Math.random() * zeroWidthChars.length)];
             }
 
-            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg} ${invisibleHash}`;
+            const personalizedMessage = `${personalizedHeader}\n\n${rawMsg}\n\n${invisibleHash}`;
 
             await db.collection('mail_queue').add({
                 phone: s.p,

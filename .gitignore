@@ -15,3 +15,11 @@ node_modules/
 .firebase/
 # Explicitly allow .firebaserc even if ignored by global rules
 !/.firebaserc
+
+# LARGE FILES / BACKUPS
+*.rar
+*.zip
+*.7z
+
+# SERVER COMPONENT (Separate deploy)
+whatsapp-server/
