@@ -3030,10 +3030,16 @@ async function confirmDelivery() {
         btn.disabled = true;
         btn.innerText = "Guardando...";
 
+        // Check for auto-resolved guardian info
+        const guardianName = pickerInp.dataset.guardianName || "";
+        const guardianRel = pickerInp.dataset.guardianRel || "";
+
         const updateData = {
             qr_delivered: true,
             qr_delivered_at: new Date().toISOString(),
             qr_delivered_to: pickerDni,
+            qr_delivered_to_name: guardianName, // NEW
+            qr_delivered_to_rel: guardianRel,   // NEW
             qr_delivered_by: myDeviceId || 'unknown_device'
         };
 
@@ -3287,5 +3293,155 @@ function showDeliveryListModal(key) {
     });
 
     modal.style.display = 'flex';
+}
+
+// --- GUARDIAN DATABASE LOGIC (SIAGIE IMPORT) ---
+async function importGuardiansFromExcel(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    const btn = document.querySelector('button[onclick="document.getElementById(\'guardianFile\').click()"]');
+    const originalText = btn ? btn.innerText : "📂 Importar Padrón";
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Leyendo Excel...";
+    }
+
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        if (json.length === 0) throw new Error("El archivo está vacío o no se pudo leer.");
+
+        showToast(`Analizando ${json.length} filas...`, "info");
+        console.log("Columnas detectadas:", Object.keys(json[0]));
+
+        let batch = db.batch();
+        let count = 0;
+        let batchCount = 0;
+        let totalImported = 0;
+
+        for (const row of json) {
+            // Flexible column mapping
+            const dni = String(row['DNI DEL PARENTESCO'] || row['DNI'] || "").trim();
+            const name = (row['APELLIDOS Y NOMBRES'] || row['NOMBRE'] || "").trim();
+            const rel = (row['PARENTESCO'] || "Apoderado").trim();
+
+            if (dni.length >= 8 && name) {
+                const docRef = db.collection('guardians').doc(dni);
+                batch.set(docRef, {
+                    n: name,
+                    rel: rel,
+                    updatedAt: new Date().toISOString()
+                });
+
+                count++;
+                batchCount++;
+            }
+
+            // Commit every 400 docs
+            if (batchCount >= 400) {
+                if (btn) btn.innerText = `⏳ Guardando ${totalImported + count}...`;
+                await batch.commit();
+                totalImported += batchCount;
+                batch = db.batch();
+                batchCount = 0;
+            }
+        }
+
+        if (batchCount > 0) {
+            await batch.commit();
+            totalImported += batchCount;
+        }
+
+        showToast(`✅ IMPORTACIÓN ÉXITOSA. Se guardaron ${totalImported} apoderados.`, "success");
+        input.value = "";
+
+    } catch (e) {
+        console.error("Import error:", e);
+        showToast("Error importando: " + e.message, "error");
+        alert("Asegúrate que el Excel tenga las columnas:\n- APELLIDOS Y NOMBRES\n- PARENTESCO\n- DNI DEL PARENTESCO");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+}
+window.importGuardiansFromExcel = importGuardiansFromExcel;
+
+// --- DNI AUTO-LOOKUP LISTENER ---
+document.addEventListener('DOMContentLoaded', () => {
+    const pickerInp = document.getElementById('deliveryPickerDni');
+    if (pickerInp) {
+        pickerInp.addEventListener('input', async (e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            if (val.length === 8) {
+                searchGuardianByDNI(val);
+            } else {
+                const display = document.getElementById('guardianNameDisplay');
+                if (display) display.style.display = 'none';
+
+                // Clear dataset
+                delete pickerInp.dataset.guardianName;
+                delete pickerInp.dataset.guardianRel;
+            }
+        });
+    }
+});
+
+async function searchGuardianByDNI(dni) {
+    let display = document.getElementById('guardianNameDisplay');
+    if (!display) {
+        display = document.createElement('div');
+        display.id = 'guardianNameDisplay';
+        display.style.padding = "10px";
+        display.style.marginTop = "5px";
+        display.style.borderRadius = "5px";
+        display.style.fontSize = "13px";
+        display.style.fontWeight = "bold";
+        display.style.display = "none";
+
+        const inp = document.getElementById('deliveryPickerDni');
+        if (inp && inp.parentNode) inp.parentNode.appendChild(display);
+    }
+
+    display.innerText = "🔍 Buscando nombre...";
+    display.style.background = "#E1F5FE";
+    display.style.color = "#0277BD";
+    display.style.display = "block";
+
+    try {
+        const doc = await db.collection('guardians').doc(dni).get();
+        if (doc.exists) {
+            const g = doc.data();
+            display.innerHTML = `✅ ${g.n} <span style="font-weight:normal; color:#666">(${g.rel})</span>`;
+            display.style.background = "#C8E6C9";
+            display.style.color = "#2E7D32";
+
+            const inp = document.getElementById('deliveryPickerDni');
+            if (inp) {
+                inp.dataset.guardianName = g.n;
+                inp.dataset.guardianRel = g.rel;
+            }
+        } else {
+            display.innerText = "ℹ️ DNI no registrado en padrón (Escriba nombre manual si es necesario)";
+            display.style.background = "#FFF3CD";
+            display.style.color = "#856404";
+
+            const inp = document.getElementById('deliveryPickerDni');
+            if (inp) {
+                delete inp.dataset.guardianName;
+                delete inp.dataset.guardianRel;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        display.innerText = "";
+    }
 }
 

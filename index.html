@@ -16,6 +16,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -499,6 +500,14 @@
                     style="margin-top: 10px; width: 100%; background: #EDE7F6; color: #512DA8; border: 1px solid #D1C4E9;">
                     📊 Ver Avance de Entregas (Estadísticas)
                 </button>
+
+                <!-- IMPORT GUARDIANS -->
+                <button onclick="document.getElementById('guardianFile').click()" class="btn-secondary"
+                    style="margin-top: 5px; width: 100%; background: #E0F7FA; color: #006064; border: 1px solid #B2EBF2;">
+                    📂 Importar Padrón de Apoderados (SIAGIE)
+                </button>
+                <input type="file" id="guardianFile" accept=".xlsx, .xls" style="display: none;"
+                    onchange="importGuardiansFromExcel(this)">
 
                 <div id="deliveryStatsPanel"
                     style="display: none; margin-top: 15px; background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #eee;">
