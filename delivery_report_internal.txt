@@ -1,0 +1,46 @@
+📊 REPORTE DE ENTREGAS QR faltantes
+========================================
+ℹ️ Project ID: gh20261
+✅ Total Alumnos Registrados: 529
+🔍 Debug 1st Student Keys: id, dni, name, grade, section, qr_delivered
+🔍 Debug 1st Student qr_delivered: true (Type: boolean)
+✅ Total QRs Entregados (Flag 'qr_delivered'): 173
+⚠️ FALTAN POR ENTREGAR: 356
+----------------------------------------
+📅 Asistencias de HOY (14/02/2026): 36
+   (Nota: Si aquí hay ~30 y arriba 0, es posible que se escanearon en 'Asistencia' y no en 'Entrega')
+----------------------------------------
+  - 1° "A": Faltan 21
+  - 1° "B": Faltan 20
+  - 1° "C": Faltan 13
+  - 1° "D": Faltan 16
+  - 1° "E": Faltan 9
+  - 1° "F": Faltan 4
+  - 1° "G": Faltan 2
+  - 2° "A": Faltan 5
+  - 2° "B": Faltan 16
+  - 2° "C": Faltan 11
+  - 2° "D": Faltan 13
+  - 2° "E": Faltan 7
+  - 2° "F": Faltan 8
+  - 2° "G": Faltan 1
+  - 3° "A": Faltan 18
+  - 3° "B": Faltan 15
+  - 3° "C": Faltan 15
+  - 3° "D": Faltan 16
+  - 3° "E": Faltan 9
+  - 3° "F": Faltan 7
+  - 4° "A": Faltan 12
+  - 4° "B": Faltan 16
+  - 4° "C": Faltan 19
+  - 4° "D": Faltan 5
+  - 4° "E": Faltan 5
+  - 4° "F": Faltan 6
+  - 5° "A": Faltan 13
+  - 5° "B": Faltan 18
+  - 5° "C": Faltan 11
+  - 5° "D": Faltan 9
+  - 5° "E": Faltan 10
+  - 5° "F": Faltan 6
+
+(Nota: Si el grado es '?', verifique los datos del alumno)

@@ -458,6 +458,60 @@ async function exportGeneratedDatabase() {
     }
 }
 
+async function exportGoogleContacts() {
+    if (!db) return;
+    const btn = document.querySelector('button[title="Exportar para Google Contacts"]');
+    if (btn) btn.disabled = true;
+
+    try {
+        const snapshot = await db.collection('students').get();
+        if (snapshot.empty) {
+            showToast("No hay estudiantes para exportar.", "info");
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        // Google Contacts CSV Header Format (standard)
+        // Name, Given Name, Additional Name, Family Name, Yomi Name, Given Name Yomi, Additional Name Yomi, Family Name Yomi, Name Prefix, Name Suffix, Initials, Nickname, Short Name, Maiden Name, Birthday, Gender, Location, Billing Information, Directory Server, Mileage, Occupation, Hobby, Sensitivity, Priority, Subject, Notes, Language, Photo, Group Membership, Phone 1 - Type, Phone 1 - Value
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Name,Phone 1 - Type,Phone 1 - Value\n"; // Simplified header for Google
+
+        let itemsCount = 0;
+
+        snapshot.forEach(doc => {
+            const st = doc.data();
+
+            // Only export if they have a phone number
+            if (st.p && st.p.length >= 7) {
+                const safeName = `"${st.n} (${st.g}° ${st.s}) - APODERADO"`; // Add Grade/Sec to name for easy ID
+                let phone = st.p.replace(/[^0-9+]/g, ''); // Keep only numbers and +
+
+                // Ensure it has country code if it looks like a mobile
+                if (phone.length === 9) {
+                    phone = `+51${phone}`;
+                }
+
+                csvContent += `${safeName},Mobile,${phone}\n`;
+                itemsCount++;
+            }
+        });
+
+        if (itemsCount === 0) {
+            showToast("No se encontraron alumnos con número de celular.", "warning");
+        } else {
+            const dateStr = new Date().toISOString().slice(0, 10);
+            downloadCSV(csvContent, `Contactos_Google_Alumnos_${dateStr}.csv`);
+            showToast(`✅ Exportados ${itemsCount} contactos para Google.`, "success");
+        }
+
+    } catch (e) {
+        console.error("Export Error:", e);
+        showToast("Error exportando contactos: " + e.message, "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
 function downloadQR() {
     const qrImg = document.querySelector('#qrcode img');
     if (qrImg) {
@@ -2528,11 +2582,12 @@ function renderCommunicationList(list) {
     countSpan.innerText = `(${list.length} destinatarios)`;
 
     // RESET "SEND ALL" BUTTON STATE
-    const btnAll = document.querySelector('button[onclick="sendAllComms()"]');
+    const btnAll = document.getElementById('btnMassSend');
     if (btnAll) {
         btnAll.disabled = false;
         btnAll.innerText = "🚀 ENVIAR TODO (ROBOT)";
         btnAll.style.background = "#2e7d32";
+        btnAll.style.color = "white"; // Ensure text is white
     }
 
     list.forEach((student, index) => {

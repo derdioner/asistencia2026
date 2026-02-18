@@ -130,6 +130,7 @@ window.startMassRobot = startMassRobot; // RENAMED
 window.stopMassQueue = stopMassQueue;
 window.loadCommunicationTargets = loadCommunicationTargets;
 window.sendWhatsAppMessage = sendWhatsAppMessage;
+window.exportGoogleContacts = exportGoogleContacts;
 
 // --- ROBOT MASS SEND ---
 // --- DEBUG LOAD ---
