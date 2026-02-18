@@ -131,33 +131,6 @@ window.stopMassQueue = stopMassQueue;
 window.loadCommunicationTargets = loadCommunicationTargets;
 window.sendWhatsAppMessage = sendWhatsAppMessage;
 window.exportGoogleContacts = exportGoogleContacts;
-window.loadImportanceTemplate = loadImportanceTemplate;
-
-function loadImportanceTemplate() {
-    const area = document.getElementById('commMessage');
-    area.value = `📢 *COMUNICADO OFICIAL - I.E.E. GENARO HERRERA*
-
-Estimados Padres de Familia:
-
-Para asegurar que las notificaciones de *Asistencia* lleguen PUNTUALMENTE a todos, el colegio ha implementado un **Sistema de Múltiples Líneas**.
-
-ℹ️ **¿Por qué usamos varios números?**
-Debido a la gran cantidad de estudiantes, enviar todo desde un solo celular saturaría el sistema y causaría demoras. Con varias líneas, garantizamos que el reporte llegue **al instante**.
-
-⚠️ **IMPORTANTE:**
-Para que este sistema funcione, **necesitamos que AGREGUE este número** a sus contactos.
-
-✅ **ACCIÓN REQUERIDA:**
-Guarde este número ahora mismo como:
-👤 *Asistencia Genaro 1*
-
-(Si no nos tiene guardados, WhatsApp podría bloquear el reporte y no le llegaría la información).
-
-Atte.
-*La Dirección*`;
-
-    showToast("Plantilla actualizada cargada.", "info");
-}
 
 // --- ROBOT MASS SEND ---
 // --- DEBUG LOAD ---
