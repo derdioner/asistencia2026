@@ -829,7 +829,17 @@ async function onScanSuccess(decodedText, decodedResult) {
                 // Su menor hijo(a) *[Alumno]* acaba de *INGRESAR*...
                 let coreMessage = `*${randomEmoji} ${pickGreeting} Padres de Familia*\n\n`;
                 coreMessage += `Su menor hijo(a) *${data.n}* acaba de *${actionText} ${actionEmoji} ${connector}* institución educativa.`;
-                coreMessage += `\n\n🕒 *Hora:* ${now.toLocaleTimeString()}\n📅 *Fecha:* ${todayDate}`;
+
+                // --- STATUS (Puntual/Tardanza) ---
+                let timeInfo = `\n\n🕒 *Hora:* ${now.toLocaleTimeString()}`;
+                if (currentScanMode === 'ingreso') {
+                    const attStatus = determineLateness(now);
+                    const statusIcon = (attStatus === 'Puntual') ? '✅' : '⚠️'; // Green check or Warning
+                    timeInfo += ` (${statusIcon} ${attStatus.toUpperCase()})`;
+                }
+                coreMessage += timeInfo;
+
+                coreMessage += `\n📅 *Fecha:* ${todayDate}`;
 
                 if (incidentData) {
                     coreMessage += `\n\n⚠️ *OBSERVACIÓN:* ${incidentMsg}`;
