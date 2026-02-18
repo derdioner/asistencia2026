@@ -131,6 +131,32 @@ window.stopMassQueue = stopMassQueue;
 window.loadCommunicationTargets = loadCommunicationTargets;
 window.sendWhatsAppMessage = sendWhatsAppMessage;
 window.exportGoogleContacts = exportGoogleContacts;
+window.loadImportanceTemplate = loadImportanceTemplate;
+
+function loadImportanceTemplate() {
+    const area = document.getElementById('commMessage');
+    area.value = `📢 *COMUNICADO IMPORTANTE - I.E.E. GENARO HERRERA*
+
+Estimados Padres de Familia:
+
+Para asegurar que reciban las notificaciones de *Asistencia (Ingreso/Salida)* de sus hijos puntualmente, el colegio utiliza un sistema con **múltiples líneas de atención**.
+
+⚠️ **¿Por qué es IMPORTANTE guardar este número?**
+1. WhatsApp bloquea los mensajes de números desconocidos.
+2. Si no nos tiene guardados, **no le llegarán los reportes de asistencia**.
+3. Guardar el contacto ayuda a validar que somos una institución segura.
+
+✅ **ACCIÓN REQUERIDA:**
+Por favor, **AGREGUE este número** a sus contactos como:
+👤 *Asistencia Genaro 1*
+
+Seguiremos habilitando más líneas para brindarles un mejor servicio.
+
+Atte.
+*La Dirección*`;
+
+    showToast("Plantilla cargada. Puede editarla antes de enviar.", "info");
+}
 
 // --- ROBOT MASS SEND ---
 // --- DEBUG LOAD ---
