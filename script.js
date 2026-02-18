@@ -825,6 +825,9 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const actionText = (currentScanMode === 'ingreso') ? "INGRESAR" : "SALIR";
                 const actionEmoji = (currentScanMode === 'ingreso') ? "📥" : "📤";
 
+                // GRAMÁTICA: Ingresar A LA / Salir DE LA
+                const connector = (currentScanMode === 'ingreso') ? "A LA" : "DE LA";
+
                 // Formato: *✅ Hola [Padre]*
                 // Su menor hijo(a) *[Alumno]* acaba de *INGRESAR*...
                 let coreMessage = `*${randomEmoji} ${pickGreeting} Padres de Familia*\n\n`;
