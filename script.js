@@ -814,24 +814,31 @@ async function onScanSuccess(decodedText, decodedResult) {
             if (data.p && data.p.length >= 9) {
                 const hour = now.getHours();
 
-                // --- 1. TIME-AWARE GREETING ---
-                let timeGreeting = "Hola";
-                if (hour < 12) timeGreeting = "Buenos días";
-                else if (hour < 18) timeGreeting = "Buenas tardes";
-                else timeGreeting = "Buenas noches";
-
-                const greetings = [timeGreeting, "Estimado apoderado", "Saludos", "Hola qué tal", "Aviso de Asistencia"];
+                // --- 1. SEGURIDAD ADICIONAL (Iconos y Saludos Aleatorios) ---
+                const greetings = ["Hola", "Estimado(a)", "Buen día", "Saludos", "Aviso Importante", "Atención"];
                 const pickGreeting = greetings[Math.floor(Math.random() * greetings.length)];
 
-                // --- 2. DATA VERIFICATION MODE (Override) ---
-                // Requested format: "HOLA, [NOMBRE] [DNI] [GRADO] Y [SECCION], ESTÁN CORRECTOS TUS DATOS?"
+                const emojis = ["✅", "🏫", "🎒", "👋", "🕒", "✨", "📌", "📢"];
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
 
-                let coreMessage = `HOLA, ${data.n} ${data.id} ${data.g} Y ${data.s}, ESTÁN CORRECTOS TUS DATOS?`;
+                // --- 2. MENSAJE ORIGINAL ---
+                const actionText = (currentScanMode === 'ingreso') ? "INGRESAR" : "SALIR";
+                const actionEmoji = (currentScanMode === 'ingreso') ? "📥" : "📤";
 
-                // Security measures text
-                const securityMsg = "\n\n(Mensaje generado automáticamente para validar asistencia y evitar bloqueo de chip por spam)";
+                // Formato: *✅ Hola [Padre]*
+                // Su menor hijo(a) *[Alumno]* acaba de *INGRESAR*...
+                let coreMessage = `*${randomEmoji} ${pickGreeting} Padres de Familia*\n\n`;
+                coreMessage += `Su menor hijo(a) *${data.n}* acaba de *${actionText} ${actionEmoji}* de la institución educativa.`;
+                coreMessage += `\n\n🕒 *Hora:* ${now.toLocaleTimeString()}\n📅 *Fecha:* ${todayDate}`;
 
-                // --- 3. INVISIBLE HASH (Uniqueness) ---
+                if (incidentData) {
+                    coreMessage += `\n\n⚠️ *OBSERVACIÓN:* ${incidentMsg}`;
+                }
+
+                // Security footer
+                coreMessage += `\n\n🔒 _Mensaje automático de Seguridad Genaro Herrera_`;
+
+                // --- 3. HASH INVISIBLE (Anti-Bloqueo) ---
                 const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
                 let invisibleHash = '';
                 const len = Math.floor(Math.random() * 5) + 3; // 3 to 7 chars
@@ -839,11 +846,10 @@ async function onScanSuccess(decodedText, decodedResult) {
                     invisibleHash += zeroWidthChars[Math.floor(Math.random() * zeroWidthChars.length)];
                 }
 
-                const emojis = ["✅", "🏫", "🎒", "👋", "🕒", "✨", "📌"];
-                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                const message = `${coreMessage} ${invisibleHash}`;
+                // const encodedMsg = encodeURIComponent(message); // Entregado limpio a la cola
 
-                const message = `${coreMessage} ${securityMsg} ${randomEmoji}${incidentMsg} ${invisibleHash}`;
-                const encodedMsg = encodeURIComponent(message);
+                // Clean Phone
                 let phone = data.p.replace(/\D/g, '');
                 if (phone.length === 9) phone = "51" + phone;
 
@@ -858,8 +864,8 @@ async function onScanSuccess(decodedText, decodedResult) {
                         dni: data.id,
                         name: data.n,
                         phone: phone,
-                        message: message,
-                        status: 'pending', // pending -> sent
+                        message: message, // Raw message, bot will handle sending
+                        status: 'pending',
                         type: 'attendance', // HIGH PRIORITY
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }).then(() => {
