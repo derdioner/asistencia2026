@@ -226,18 +226,30 @@ async function processMessageLogic(docId, data) {
         if (phone.length === 9) phone = '51' + phone;
 
         // VALIDATE NUMBER EXISTS ON WHATSAPP
-        const numberDetails = await client.getNumberId(phone);
-        if (!numberDetails) {
-            throw new Error("El número no existe en WhatsApp");
+        let chatId;
+        try {
+            const numberDetails = await client.getNumberId(phone);
+            if (numberDetails) {
+                chatId = numberDetails._serialized;
+            } else {
+                throw new Error("El número no existe en WhatsApp (Check 1)");
+            }
+        } catch (e) {
+            console.warn(`⚠️ ${sessionName}: 'getNumberId' falló (${e.message}). Usando Fallback ID manual.`);
+            // FALLBACK FOR 'WidFactory' ERROR
+            chatId = `${phone}@c.us`;
         }
 
-        const chatId = numberDetails._serialized;
-
-        // Typing simulation
-        const chat = await client.getChatById(chatId);
-        await chat.sendStateTyping();
-        const typingTime = Math.floor(Math.random() * 3000) + 2000;
-        await new Promise(r => setTimeout(r, typingTime));
+        // Typing simulation (Optional - Fail safe)
+        try {
+            const chat = await client.getChatById(chatId);
+            await chat.sendStateTyping();
+            const typingTime = Math.floor(Math.random() * 3000) + 2000;
+            await new Promise(r => setTimeout(r, typingTime));
+        } catch (e) {
+            console.warn(`⚠️ ${sessionName}: Typing simulation skipped (${e.message})`);
+            // Continue to send anyway
+        }
 
         // Timeout Promise Wrapper
         const sendPromise = client.sendMessage(chatId, data.message, { sendSeen: false });
