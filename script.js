@@ -2565,7 +2565,7 @@ async function loadCommunicationTargets() {
             // Filter only valid phones
             if (s.p && s.p.length >= 9) {
                 targets.push({
-                    id: doc.id,
+                    id: s.id || doc.id, // Use stored DNI (id) or fallback to Doc ID
                     n: s.n,
                     g: s.g,
                     s: s.s,
