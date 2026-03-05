@@ -196,13 +196,13 @@ async function processMessageLogic(docId, data) {
     let delay = 0;
 
     if (msgType === 'attendance') {
-        // High Priority: 20s - 25s
-        delay = Math.floor(Math.random() * 5000) + 20000;
-        console.log(`🚑 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
+        // High Priority: 10s - 15s (As requested by user for robots)
+        delay = Math.floor(Math.random() * 5000) + 10000;
+        console.log(`🚑 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s... (Asistencia)`);
     } else {
-        // Low Priority: 60s - 120s (Super Safe Mode)
-        delay = Math.floor(Math.random() * 60000) + 60000;
-        console.log(`🐢 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
+        // Low Priority: 50s - 80s (Super Safe Mode mass sending for robots)
+        delay = Math.floor(Math.random() * 30000) + 50000;
+        console.log(`🐢 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s... (Masivo)`);
 
         // Batch Logic (Per Bot)
         massCounter++;
@@ -210,8 +210,8 @@ async function processMessageLogic(docId, data) {
         const batchLimit = Math.floor(Math.random() * 10) + 15;
 
         if (massCounter >= batchLimit) {
-            // Random break: 5 to 15 minutes
-            const breakTimeMin = Math.floor(Math.random() * 10) + 5;
+            // Random break: 5 to 10 minutes
+            const breakTimeMin = Math.floor(Math.random() * 5) + 5;
             const breakTimeMs = breakTimeMin * 60 * 1000;
 
             console.log(`🛑 ${sessionName}: Límite de lote (${batchLimit}) alcanzado.`);

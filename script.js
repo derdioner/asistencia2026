@@ -1041,9 +1041,9 @@ async function attemptMigoWork(workerDb) {
 async function processMigoJob(docId, data, workerDb) {
     let delay = 2000;
     if (data.type === 'attendance') {
-        delay = Math.floor(Math.random() * 5000) + 10000;
+        delay = Math.floor(Math.random() * 5000) + 5000; // 5s to 10s for Migo Attendance
     } else if (data.type === 'mass') {
-        delay = Math.floor(Math.random() * 2000) + 2000; // Faster for mass, 2-4 seconds
+        delay = Math.floor(Math.random() * 5000) + 10000; // 10s to 15s for Migo Mass
     }
 
     console.log(`⏳ Migo Worker: Esperando ${Math.floor(delay / 1000)}s para enviar.`);
