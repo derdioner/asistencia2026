@@ -7,9 +7,9 @@
     <title>GH ASISTENCIA | Sistema de Asistencia QR</title>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=26.75">
+    <link rel="stylesheet" href="style.css?v=26.79">
     <!-- script.js removed from head to avoid dual loading -->
-    <link rel="manifest" href="manifest.json?v=26.75">
+    <link rel="manifest" href="manifest.json?v=26.79">
     <meta name="theme-color" content="#00B4D8">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Libraries -->
@@ -105,7 +105,7 @@
         </button>
     </div>
 
-    <div class="app-container" id="app-container" style="display: none;"> <!-- Hidden until login -->
+    <div class="app-container" id="app-container" style="display: none !important;"> <!-- Hidden until login -->
         <header>
             <img src="logo.png" alt="Logo I.E.E. Genaro Herrera" class="school-logo">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -196,6 +196,23 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>DNI Apoderado (Búsqueda Reniec)</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="parentDNI" class="input-field" style="margin-bottom:0;"
+                            placeholder="DNI Apoderado" maxlength="8"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                        <button onclick="searchApoderadoMigo()" class="btn-primary"
+                            style="padding: 0 15px; background: #0077B6; width: auto;">
+                            🔍
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre Apoderado</label>
+                        <input type="text" id="parentName" class="input-field"
+                            style="margin-bottom:0; background: #f0f0f0;" placeholder="Se llenará auto." readonly>
+                    </div>
+                </div>
                 <div class="row">
                     <div class="form-group">
                         <label>Teléfono Apoderado</label>
@@ -215,7 +232,8 @@
                     <div id="qrcode"></div>
                     <p id="qr-text" style="display:none; margin-top:10px; font-size:12px; color: #666;"></p>
                     <button id="downloadBtn" class="btn-secondary" style="display:none;"
-                        onclick="downloadQR()">Descargar QR</button>
+                        onclick="downloadQR()">Descargar
+                        QR</button>
                 </div>
             </div>
 
@@ -386,6 +404,29 @@
                 <h3>Estadística Visual</h3>
                 <div style="height: 300px; display: flex; justify-content: center;">
                     <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card no-print">
+                <h3>Mantenimiento de Datos</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Usa estas herramientas para corregir
+                    nombres
+                    de apoderados faltantes en los 600 alumnos existentes.</p>
+                <div class="row" style="gap: 10px;">
+                    <button onclick="syncMissingParentNames()" class="btn-secondary"
+                        style="flex: 1; background: #673AB7; font-size: 12px;"
+                        title="Busca en la colección de 'Guardians' y actualiza a los alumnos">
+                        🔄 Sincronizar con BD
+                    </button>
+                    <button onclick="document.getElementById('excelUpload').click()" class="btn-secondary"
+                        style="flex: 1; background: #2E7D32; font-size: 12px;"
+                        title="Sube un Excel de SIAGIE para completar datos">
+                        Excel SIAGIE 📁
+                    </button>
+                    <input type="file" id="excelUpload" accept=".xlsx, .xls" style="display:none"
+                        onchange="handleExcelImport(event)">
+                </div>
+                <div id="repairStatus" style="margin-top: 10px; font-size: 11px; font-weight: bold; display: none;">
                 </div>
             </div>
 
@@ -696,13 +737,14 @@
 
             <div class="card" id="commListCard" style="display: none;">
                 <h3>Cola de Envíos <span id="commCount"
-                        style="font-size: 14px; color: #666; font-weight: normal;"></span></h3>
+                        style="font-size: 14px; color: #666; font-weight: normal;"></span>
+                </h3>
 
                 <div id="robotControlPanel"
                     style="margin-bottom: 15px; padding: 10px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
                     <div>
-                        <strong style="color: #2e7d32;">🤖 Modo Robot:</strong>
-                        <span style="font-size: 13px;">Envía todo automáticamente.</span>
+                        <strong style="color: #2e7d32;">🤖 Modo API Oficial Migo:</strong>
+                        <span style="font-size: 13px;">Envío 100% seguro antibaneo.</span>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button onclick="stopMassQueue()" class="btn-danger"
@@ -712,7 +754,7 @@
                         <button id="btnMassSend" onclick="console.log('Click detectado en HTML'); startMassRobot()"
                             class="btn-primary"
                             style="background: #2e7d32; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold;">
-                            🚀 ENVIAR TODO (ROBOT)
+                            🚀 ENVIAR TODO (API MIGO)
                         </button>
                     </div>
                 </div>
@@ -828,60 +870,59 @@
             <br>
             <span style="font-size: 13px; color: #E1F5FE;">📞 Celular Institucional: <strong>+51 972 190
                     027</strong></span>
-            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.75 (LATEST)</span>
+            <br><span style="font-size: 10px; opacity: 0.8;"> Versión 26.80 (MIGO-FIX)</span>
         </footer>
-    </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast hidden">Mensaje de notificación</div>
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden">Mensaje de notificación</div>
 
-    <!-- PRINTABLE REPORT (Hidden on Screen) -->
-    <div id="printableReport" class="printable-only" style="display: none;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="logo.png" style="height: 60px;">
-            <h2>Reporte de Asistencia</h2>
-            <h4 id="printFilterSummary"></h4>
+        <!-- PRINTABLE REPORT (Hidden on Screen) -->
+        <div id="printableReport" class="printable-only" style="display: none;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="logo.png" style="height: 60px;">
+                <h2>Reporte de Asistencia</h2>
+                <h4 id="printFilterSummary"></h4>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: sans-serif;">
+                <thead>
+                    <tr style="background: #eee;">
+                        <th style="border: 1px solid #000; padding: 5px;">#</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Hora</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Tipo</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Alumno</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Grado/Sec</th>
+                        <th style="border: 1px solid #000; padding: 5px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody"></tbody>
+            </table>
+            Generado por Sistema de Asistencia QR (v26.75)
         </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: sans-serif;">
-            <thead>
-                <tr style="background: #eee;">
-                    <th style="border: 1px solid #000; padding: 5px;">#</th>
-                    <th style="border: 1px solid #000; padding: 5px;">Hora</th>
-                    <th style="border: 1px solid #000; padding: 5px;">Tipo</th>
-                    <th style="border: 1px solid #000; padding: 5px;">Alumno</th>
-                    <th style="border: 1px solid #000; padding: 5px;">Grado/Sec</th>
-                    <th style="border: 1px solid #000; padding: 5px;">Estado</th>
-                </tr>
-            </thead>
-            <tbody id="printTableBody"></tbody>
-        </table>
-        Generado por Sistema de Asistencia QR (v26.75)
-    </div>
-    </div>
 
-    <!-- DELIVERY LIST MODAL -->
-    <div id="deliveryListModal"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
-        <div
-            style="background: white; width: 90%; max-width: 400px; max-height: 80vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;">
+        <!-- DELIVERY LIST MODAL -->
+        <div id="deliveryListModal"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center;">
             <div
-                style="padding: 15px; background: #673AB7; color: white; display: flex; justify-content: space-between; align-items: center;">
-                <h3 id="delListTitle" style="margin: 0;">Lista 5° A</h3>
-                <button onclick="document.getElementById('deliveryListModal').style.display='none'"
-                    style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <div style="padding: 10px; overflow-y: auto; flex: 1;">
-                <div id="delListContent"></div>
-            </div>
-            <div style="padding: 10px; border-top: 1px solid #eee; text-align: right;">
-                <button onclick="document.getElementById('deliveryListModal').style.display='none'"
-                    class="btn-secondary" style="padding: 8px 15px;">Cerrar</button>
+                style="background: white; width: 90%; max-width: 400px; max-height: 80vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;">
+                <div
+                    style="padding: 15px; background: #673AB7; color: white; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="delListTitle" style="margin: 0;">Lista 5° A</h3>
+                    <button onclick="document.getElementById('deliveryListModal').style.display='none'"
+                        style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+                </div>
+                <div style="padding: 10px; overflow-y: auto; flex: 1;">
+                    <div id="delListContent"></div>
+                </div>
+                <div style="padding: 10px; border-top: 1px solid #eee; text-align: right;">
+                    <button onclick="document.getElementById('deliveryListModal').style.display='none'"
+                        class="btn-secondary" style="padding: 8px 15px;">Cerrar</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script src="script.js?v=26.75"></script>
-    <script src="mass_sender_v2.js?v=1.2"></script>
+        <script src="script.js?v=26.79"></script>
+        <script src="mass_sender_v2.js?v=26.79"></script>
+    </div>
 </body>
 
 </html>

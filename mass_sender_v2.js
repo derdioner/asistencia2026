@@ -54,7 +54,7 @@ async function startMassRobot() {
         return;
     }
 
-    if (!confirm(`🚀 CONFIRMACIÓN (V2)\n\n¿Enviar mensaje a ${currentCommList.length} personas usando el ROBOT?\n\nRequiere 'Servidor Robot' activo.`)) {
+    if (!confirm(`🚀 CONFIRMACIÓN (V2)\n\n¿Enviar mensaje a ${currentCommList.length} personas usando la API OFICIAL DE MIGO?\n\nEs 100% libre de bloqueos.`)) {
         return;
     }
 
@@ -85,7 +85,12 @@ async function startMassRobot() {
 
             // Header: *✅ HOLA JUAN PEREZ*
             // Details: DNI: 12345678 | AULA: 5° "A"
-            const personalizedHeader = `*${randomEmoji} ${randomGreeting} ${s.n}*\nDNI: ${s.id || 'S/D'} | AULA: ${s.g}° "${s.s}"`;
+            let personalizedHeader = `*${randomEmoji} ${randomGreeting} ${s.n}*\nDNI: ${s.id || 'S/D'} | AULA: ${s.g}° "${s.s}"`;
+
+            // Add Guardian Name if available
+            if (s.pName) {
+                personalizedHeader += `\nAPODERADO: ${s.pName}`;
+            }
 
             const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
             let invisibleHash = '';

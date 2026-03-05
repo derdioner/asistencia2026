@@ -40,6 +40,11 @@ const db = admin.firestore();
 // Each session stores its own login data in .wwebjs_auth/session-<name>
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: sessionName }),
+    // FIJANDO VERSION WEB PARA EVITAR ERROR 'WidFactory' / 'getChat'
+    webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+    },
     puppeteer: {
         headless: false,
         args: [
@@ -49,7 +54,7 @@ const client = new Client({
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu', // GPU sometimes crashes on low-end VPS
+            '--disable-gpu',
             '--disable-extensions'
         ]
     }
@@ -190,10 +195,9 @@ async function processMessageLogic(docId, data) {
     const msgType = data.type || 'mass';
     let delay = 0;
 
-    // --- DELAY LOGIC (Jitter) ---
     if (msgType === 'attendance') {
-        // High Priority: 8s - 25s
-        delay = Math.floor(Math.random() * 17000) + 8000;
+        // High Priority: 20s - 25s
+        delay = Math.floor(Math.random() * 5000) + 20000;
         console.log(`🚑 ${sessionName}: Esperando ${Math.floor(delay / 1000)}s...`);
     } else {
         // Low Priority: 60s - 120s (Super Safe Mode)
@@ -242,10 +246,16 @@ async function processMessageLogic(docId, data) {
 
         // Typing simulation (Optional - Fail safe)
         try {
-            const chat = await client.getChatById(chatId);
-            await chat.sendStateTyping();
-            const typingTime = Math.floor(Math.random() * 3000) + 2000;
-            await new Promise(r => setTimeout(r, typingTime));
+            if (client && client.pupPage) { // Check if client and page are alive
+                const chat = await client.getChatById(chatId);
+                if (chat) {
+                    await chat.sendStateTyping();
+                    const typingTime = Math.floor(Math.random() * 3000) + 2000;
+                    await new Promise(r => setTimeout(r, typingTime));
+                }
+            } else {
+                console.warn(`⚠️ ${sessionName}: Client/Page not ready for typing simulation.`);
+            }
         } catch (e) {
             console.warn(`⚠️ ${sessionName}: Typing simulation skipped (${e.message})`);
             // Continue to send anyway

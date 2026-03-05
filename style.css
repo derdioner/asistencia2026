@@ -1,14 +1,18 @@
 :root {
     --primary-color: #00B4D8;
-    /* Celeste Vibrante */
     --secondary-color: #90E0EF;
     --background-color: #CAF0F8;
-    /* Celeste muy suave para fondo */
+    --bg-color: #CAF0F8;
+    /* Added for compatibility with index.html */
     --card-bg: #ffffff;
     --text-color: #03045E;
-    /* Azul oscuro para texto */
     --danger: #FF6B6B;
     --success: #4ECDC4;
+}
+
+/* Ensure app is hidden by default in CSS too */
+.app-container {
+    display: none;
 }
 
 html,

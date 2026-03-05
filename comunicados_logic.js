@@ -70,7 +70,7 @@ function renderCommunicationList(list) {
     const btnAll = document.getElementById('btnMassSend');
     if (btnAll) {
         btnAll.disabled = false;
-        btnAll.innerText = "🚀 ENVIAR TODO (ROBOT)";
+        btnAll.innerText = "🚀 ENVIAR TODO (API MIGO)";
         btnAll.style.background = "#2e7d32";
         btnAll.style.color = "white";
     }

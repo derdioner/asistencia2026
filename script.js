@@ -60,6 +60,7 @@ function installApp() {
 
 // Initialize Firebase
 let db;
+let MigoWorkerApp; // Secondary app for the automated worker
 let unsubscribeDeviceListener = null; // Unsubscribe handle
 try {
     firebase.initializeApp(firebaseConfig);
@@ -77,10 +78,8 @@ try {
 
     console.log("Firebase conectado (con Persistencia)");
 
-    // ANONYMOUS AUTH (REQUIRED FOR WRITES)
-    firebase.auth().signInAnonymously().catch(function (error) {
-        console.error("Auth Error:", error);
-    });
+    // Delay worker to avoid conflict with main session init
+    setTimeout(initMigoWorker, 3000);
 } catch (error) {
     console.warn("Error inicializando Firebase (¿Faltan las llaves?):", error);
     showToast("⚠️ Configura Firebase en script.js", "error");
@@ -283,6 +282,8 @@ async function generateQR() {
     const gradeInput = document.getElementById('studentGrade');
     const sectionInput = document.getElementById('studentSection');
     const phoneInput = document.getElementById('parentPhone');
+    const parentDniInput = document.getElementById('parentDNI');
+    const parentNameInput = document.getElementById('parentName');
 
     const name = nameInput.value.trim();
     const dni = dniInput.value.trim();
@@ -290,6 +291,8 @@ async function generateQR() {
     const section = sectionInput.value;
     const phone = phoneInput.value.trim();
     const dob = document.getElementById('studentDOB').value;
+    const pDni = parentDniInput ? parentDniInput.value.trim() : '';
+    const pName = parentNameInput ? parentNameInput.value.trim() : '';
 
     try {
         if (!name || !dni) {
@@ -313,7 +316,7 @@ async function generateQR() {
             const existingDoc = docRef.docs[0];
             const existing = existingDoc.data();
 
-            const hasChanges = (existing.n !== name) || (existing.g !== grade) || (existing.s !== section) || (existing.p !== phone) || (existing.dob !== dob);
+            const hasChanges = (existing.n !== name) || (existing.g !== grade) || (existing.s !== section) || (existing.p !== phone) || (existing.dob !== dob) || (existing.pDni !== pDni) || (existing.pName !== pName);
 
             if (hasChanges) {
                 const doUpdate = confirm(`El alumno ${existing.n} ya existe pero con datos diferentes.\n\n¿Deseas ACTUALIZAR la información con los nuevos datos ingresados?`);
@@ -323,7 +326,9 @@ async function generateQR() {
                         g: grade,
                         s: section,
                         p: phone,
-                        dob: dob
+                        dob: dob,
+                        pDni: pDni,
+                        pName: pName
                     });
                     showToast("Datos actualizados correctamente", "success");
 
@@ -334,6 +339,7 @@ async function generateQR() {
                         s: section,
                         p: phone,
                         dob: dob
+                        // Excluimos datos del apoderado del código QR para no rebasar el límite de cara al escaneo rápido, solo en BD.
                     };
                     renderQR(qrData);
                     showToast("¡Datos Actualizados y QR Regenerado!", "success");
@@ -342,6 +348,8 @@ async function generateQR() {
                     nameInput.value = '';
                     dniInput.value = '';
                     phoneInput.value = '';
+                    if (parentDniInput) parentDniInput.value = '';
+                    if (parentNameInput) parentNameInput.value = '';
                     nameInput.focus();
                     return;
                 } else {
@@ -380,11 +388,19 @@ async function generateQR() {
             s: section,
             p: phone,
             dob: dob,
+            pDni: pDni,
+            pName: pName,
             created: new Date().toISOString()
         };
 
-        const qrData = { ...studentData };
-        delete qrData.created;
+        const qrData = {
+            n: name,
+            id: dni,
+            g: grade,
+            s: section,
+            p: phone,
+            dob: dob
+        };
         renderQR(qrData);
 
         try {
@@ -401,6 +417,8 @@ async function generateQR() {
             nameInput.value = '';
             dniInput.value = '';
             phoneInput.value = '';
+            if (parentDniInput) parentDniInput.value = '';
+            if (parentNameInput) parentNameInput.value = '';
             nameInput.focus();
         } catch (saveError) {
             console.error("Error guardando en nube:", saveError);
@@ -821,35 +839,24 @@ async function onScanSuccess(decodedText, decodedResult) {
                 const emojis = ["✅", "🏫", "🎒", "👋", "🕒", "✨", "📌", "📢"];
                 const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
 
-                // --- 2. MENSAJE ORIGINAL ---
-                const actionText = (currentScanMode === 'ingreso') ? "INGRESAR" : "SALIR";
+                // --- 2. CONSTRUCCIÓN DEL MENSAJE SIMPLIFICADO ---
+                const actionText = (currentScanMode === 'ingreso') ? "INGRESÓ" : "SALIÓ";
                 const actionEmoji = (currentScanMode === 'ingreso') ? "📥" : "📤";
 
-                // GRAMÁTICA: Ingresar A LA / Salir DE LA
-                const connector = (currentScanMode === 'ingreso') ? "A LA" : "DE LA";
+                // Formato pedido: (Saludo) + NOMBRE + (ingresó/salió) + a las + HORA + EMOJI + SEGURIDAD
+                let coreMessage = `${randomEmoji} ${pickGreeting} *${data.n}* ${actionText} a las *${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}* ${actionEmoji}`;
 
-                // Formato: *✅ Hola [Padre]*
-                // Su menor hijo(a) *[Alumno]* acaba de *INGRESAR*...
-                let coreMessage = `*${randomEmoji} ${pickGreeting} Padres de Familia*\n\n`;
-                coreMessage += `Su menor hijo(a) *${data.n}* acaba de *${actionText} ${actionEmoji} ${connector}* institución educativa.`;
-
-                // --- STATUS (Puntual/Tardanza) ---
-                let timeInfo = `\n\n🕒 *Hora:* ${now.toLocaleTimeString()}`;
                 if (currentScanMode === 'ingreso') {
                     const attStatus = determineLateness(now);
-                    const statusIcon = (attStatus === 'Puntual') ? '✅' : '⚠️'; // Green check or Warning
-                    timeInfo += ` (${statusIcon} ${attStatus.toUpperCase()})`;
+                    const statusIcon = (attStatus === 'Puntual') ? '✅' : '⚠️';
+                    coreMessage += `\n📌 *Estado:* ${statusIcon} ${attStatus.toUpperCase()}`;
                 }
-                coreMessage += timeInfo;
-
-                coreMessage += `\n📅 *Fecha:* ${todayDate}`;
 
                 if (incidentData) {
                     coreMessage += `\n\n⚠️ *OBSERVACIÓN:* ${incidentMsg}`;
                 }
 
-                // Security footer
-                coreMessage += `\n\n🔒 _Mensaje automático de Seguridad Genaro Herrera_`;
+                coreMessage += `\n\n🔒 _Seguridad Genaro Herrera_`;
 
                 // --- 3. HASH INVISIBLE (Anti-Bloqueo) ---
                 const zeroWidthChars = ['\u200B', '\u200C', '\u200D', '\u2060'];
@@ -872,29 +879,24 @@ async function onScanSuccess(decodedText, decodedResult) {
                 // alert(`Intento enviar a: ${phone}\nBotMode: ${botMode.checked}`);
 
                 if (botMode && botMode.checked) {
-                    // QUEUE MODE (Offline Capable)
+                    // --- V5 SMART MULTI-AGENT: CENTRALIZED QUEUE ---
+                    showToast("⏳ Registrando en Cola Central...", "info");
+
                     db.collection('mail_queue').add({
                         dni: data.id,
                         name: data.n,
                         phone: phone,
-                        message: message, // Raw message, bot will handle sending
+                        message: message,
                         status: 'pending',
-                        type: 'attendance', // HIGH PRIORITY
+                        type: 'attendance',
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     }).then(() => {
-                        showToast("🤖 Mensaje encolado al Robot", "info");
-                        // DEBUG ALERT 2
-                        // alert("✅ ¡EXITO! Mensaje guardado en Firebase (mail_queue).");
-                    }).catch((err) => {
+                        showToast("✅ Registrado. Migo o Bots lo enviarán pronto.", "success");
+                    }).catch(err => {
                         console.error("Error cola:", err);
-                        // alert("❌ ERROR AL GUARDAR EN FIREBASE:\n" + err.message);
-                        showToast("❌ Error al guardar (ver consola)", "error");
-
-                        // Fallback check if offline
-                        if (navigator.onLine === false) {
-                            showToast("⏳ Sin Internet: Mensaje guardado localmente", "warning");
-                        }
+                        showToast("❌ Error al encolar mensaje.", "error");
                     });
+
                 } else {
                     // MANUAL MODE
                     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
@@ -928,6 +930,147 @@ function onScanFailure(error) {
 
     // Log other potentially useful errors once to avoid flooding
     console.debug("Scanner noise:", error);
+}
+
+// --- MIGO WHATSAPP INTEGRATION ---
+async function enviarWhatsAppMigo(phone, message) {
+    if (!phone) return { success: false, message: 'Número inválido' };
+
+    let cleanPhone = phone.toString().replace(/\D/g, '');
+    if (cleanPhone.length === 9) cleanPhone = '51' + cleanPhone;
+
+    try {
+        const INSTANCE_NAME = '4259cae0-c1b0-45c9-a0ad-b63a26255511';
+        const WHATSAPP_API_KEY = '104DAA81-E330-4D60-AB7A-2F86B3FD4345';
+
+        const response = await fetch(`https://chat.migo.pe/message/sendText/${INSTANCE_NAME}`, {
+            method: 'POST',
+            headers: {
+                'apikey': WHATSAPP_API_KEY,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                number: cleanPhone,
+                text: message
+            })
+        });
+        const data = await response.json();
+        // Migo standard success field is 'success' or 'status: 'success''
+        return { success: (data.success || data.status === 'success'), message: data.message || 'Sent' };
+    } catch (error) {
+        console.error("Error WhatsApp Migo:", error);
+        return { success: false, message: 'Error de red' };
+    }
+}
+
+// --- MIGO BROWSER WORKER (JARVIS v5) ---
+let isMigoProcessing = false;
+let migoLatestSnapshot = null;
+
+function startMigoWorker(workerApp = null) {
+    if (!workerApp) {
+        console.warn("JARVIS: Worker iniciado sin App secundaria. Usando global (no recomendado).");
+    }
+    const workerDb = workerApp ? workerApp.firestore() : db;
+
+    console.log("🚀 JARVIS: Migo Worker activado en modo escucha (Independent)...");
+    const statusEl = document.getElementById('scanStatusMsg');
+    if (statusEl) statusEl.innerHTML += '<br><small style="color:#2E7D32; font-weight: bold;">[JARVIS Multi-Agent ACTIVE]</small>';
+
+    workerDb.collection('mail_queue')
+        .where('status', '==', 'pending')
+        .onSnapshot(snapshot => {
+            migoLatestSnapshot = snapshot;
+            attemptMigoWork(workerDb);
+        }, err => {
+            console.error("Migo Worker Snapshot Error:", err);
+            if (statusEl) statusEl.innerHTML += '<br><small style="color:red">❌ Migo Worker Error: ' + err.message + '</small>';
+        });
+}
+
+async function attemptMigoWork(workerDb) {
+    if (isMigoProcessing) return;
+    if (!migoLatestSnapshot || migoLatestSnapshot.empty) return;
+
+    const docs = [];
+    migoLatestSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.type === 'attendance' || data.type === 'mass') {
+            docs.push(doc);
+        }
+    });
+
+    if (docs.length === 0) return;
+
+    // Sort by timestamp
+    docs.sort((a, b) => (a.data().timestamp?.seconds || 0) - (b.data().timestamp?.seconds || 0));
+
+    isMigoProcessing = true;
+    try {
+        for (const candidate of docs) {
+            // CLAIM TRANSACTION (Antiduplicados)
+            const claimed = await workerDb.runTransaction(async (t) => {
+                const docRef = workerDb.collection('mail_queue').doc(candidate.id);
+                const doc = await t.get(docRef);
+
+                if (!doc.exists || doc.data().status !== 'pending') return null;
+
+                t.update(docRef, {
+                    status: 'processing',
+                    processedBy: 'MIGO_BROWSER',
+                    pickedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return { id: candidate.id, data: doc.data() };
+            });
+
+            if (claimed) {
+                console.log(`🔒 Migo Worker: Reclamado ${claimed.data.name}. Procesando...`);
+                await processMigoJob(claimed.id, claimed.data, workerDb);
+                break; // One by one to maintain delays
+            }
+        }
+    } catch (e) {
+        console.error("Migo Worker Error:", e);
+    } finally {
+        isMigoProcessing = false;
+        setTimeout(() => attemptMigoWork(workerDb), 2000); // Check again soon
+    }
+}
+
+async function processMigoJob(docId, data, workerDb) {
+    let delay = 2000;
+    if (data.type === 'attendance') {
+        delay = Math.floor(Math.random() * 5000) + 10000;
+    } else if (data.type === 'mass') {
+        delay = Math.floor(Math.random() * 2000) + 2000; // Faster for mass, 2-4 seconds
+    }
+
+    console.log(`⏳ Migo Worker: Esperando ${Math.floor(delay / 1000)}s para enviar.`);
+
+    await new Promise(r => setTimeout(r, delay));
+
+    try {
+        const res = await enviarWhatsAppMigo(data.phone, data.message);
+        if (res.success) {
+            console.log(`✅ Migo Worker: ENVIADO -> ${data.name}`);
+            await workerDb.collection('mail_queue').doc(docId).update({
+                status: 'sent',
+                sentBy: 'MIGO_BROWSER',
+                sentAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showToast(`🚀 Migo: Enviado a ${data.name}`, "success");
+        } else {
+            throw new Error(res.message);
+        }
+    } catch (e) {
+        console.error(`❌ Migo Worker: Error enviando a ${data.name}:`, e.message);
+        await workerDb.collection('mail_queue').doc(docId).update({
+            status: 'error',
+            error: e.message,
+            failedBy: 'MIGO_BROWSER'
+        });
+    }
 }
 
 function renderHistory() {
@@ -1223,6 +1366,48 @@ async function searchStudent() {
     } catch (error) {
         console.error(error);
         showToast("Error al buscar: " + error.message, "error");
+    }
+}
+
+// --- MIGO API DNI LOOKUP ---
+async function searchApoderadoMigo() {
+    const parentDNI = document.getElementById('parentDNI').value.trim();
+    if (parentDNI.length !== 8) {
+        showToast("⚠️ Ingrese un DNI válido de 8 dígitos.", "error");
+        return;
+    }
+
+    const btn = document.querySelector('button[onclick="searchApoderadoMigo()"]');
+    const ogText = btn.innerHTML;
+    btn.innerHTML = "⏳";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch("https://api.migo.pe/api/v1/dni", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer 104DAA81-E330-4D60-AB7A-2F86B3FD4345'
+            },
+            body: JSON.stringify({ "dni": parentDNI })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById('parentName').value = data.nombre;
+            showToast("✅ Datos de RENIEC obtenidos.", "success");
+        } else {
+            showToast("❌ No se encontró el DNI o error en API Migo.", "error");
+            console.error("MIGO ERROR:", data);
+        }
+
+    } catch (e) {
+        showToast("❌ Error de red al consultar Reniec.", "error");
+        console.error("MIGO FETCH ERROR:", e);
+    } finally {
+        btn.innerHTML = ogText;
+        btn.disabled = false;
     }
 }
 
@@ -1761,10 +1946,22 @@ function exportReportPDF() {
 
 // Auth State Observer - LISTENS GLOBALLY
 firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
+    console.log("🔒 Auth Change:", user ? (user.isAnonymous ? "ROBOT" : user.email) : "LOGOUT");
+
+    if (user && !user.isAnonymous) {
+        // REAL USER: Enter the app
         loginSuccess(user.email, 'ADMIN');
-    } else {
+    } else if (!user) {
+        // NO USER: Enforce Login screen
         logoutUI();
+    } else {
+        // ROBOT: Stay in Login screen (wait for real user)
+        console.log("🤖 Migo Robot detected. Keeping UI locked for user.");
+        // Ensure UI stays in login mode
+        const app = document.getElementById('app-container');
+        if (!app || app.style.display !== 'flex') {
+            logoutUI();
+        }
     }
 });
 
@@ -1892,28 +2089,29 @@ function unlockApp(name, role) {
     // DEBUG: Show role to user to confirm
     showToast(`🔑 Acceso concedido: ${role}`, "info");
 
-    // RESET VISIBILITY
+    // RESET VISIBILITY (Hide all restricted tabs by default)
     document.getElementById('tab-devices').style.display = 'none';
     document.getElementById('tab-generator').style.display = 'none';
+    document.getElementById('tab-comunicados').style.display = 'none';
+    document.getElementById('tab-delivery').style.display = 'none';
 
-    // ADMIN PERMISSIONS (Explicit Check)
-    // ADMIN PERMISSIONS (Explicit Check)
+    // ADMIN PERMISSIONS (Full Access)
     const lowerName = name.toLowerCase().trim();
     if (role === 'ADMIN' || lowerName.includes('derda@') || lowerName.includes('admin@')) {
         document.getElementById('tab-devices').style.display = 'block';
         document.getElementById('tab-generator').style.display = 'block';
+        document.getElementById('tab-comunicados').style.display = 'block';
+        document.getElementById('tab-delivery').style.display = 'block';
         currentUserRole = 'ADMIN';
-        // Force Tabs Visible just in case
-        document.getElementById('mainTabs').style.display = 'flex';
-    }
-
-    // SIAGISTA PERMISSIONS (Generator + Reports + Incidents)
-    if (role === 'SIAGISTA') {
+    } else if (role === 'SIAGISTA') {
+        // SIAGISTA PERMISSIONS (Generator + Delivery + others)
         document.getElementById('tab-generator').style.display = 'block';
-        // Reports and Incidents are visible by default
+        document.getElementById('tab-delivery').style.display = 'block';
+    } else {
+        // AUXILIAR (Only seen permitted: ESCANER, REPORTES, INCIDENCIAS, RIESGOS)
+        // These are visible by default because they aren't hidden above.
+        console.log("AUXILIAR Access: Limited to core attendance tabs.");
     }
-
-    // AUXILIAR can see Scanner, Reports, Incidents (Default visible)
 
     setTimeout(subscribeToStudents, 500);
 }
@@ -2057,11 +2255,13 @@ function logout() {
 
 function logoutUI() {
     currentUserRole = null;
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('login-overlay').style.display = 'flex';
+    const app = document.getElementById('app-container');
+    const login = document.getElementById('login-overlay');
+
+    if (app) app.style.setProperty('display', 'none', 'important');
+    if (login) login.style.setProperty('display', 'flex', 'important');
+
     stopScanner();
-    // Clear list to prevent stale data
-    if (document.getElementById('generatedList')) document.getElementById('generatedList').innerHTML = "";
 }
 
 // Legacy Device Info (Kept if needed for logs, but not for auth)
@@ -2569,7 +2769,8 @@ async function loadCommunicationTargets() {
                     n: s.n,
                     g: s.g,
                     s: s.s,
-                    p: s.p
+                    p: s.p,
+                    pName: s.pName || null // Grab Apoderado Name if exists
                 });
             }
         });
@@ -2604,7 +2805,7 @@ function renderCommunicationList(list) {
     const btnAll = document.getElementById('btnMassSend');
     if (btnAll) {
         btnAll.disabled = false;
-        btnAll.innerText = "🚀 ENVIAR TODO (ROBOT)";
+        btnAll.innerText = "🚀 ENVIAR TODO (API MIGO)";
         btnAll.style.background = "#2e7d32";
         btnAll.style.color = "white"; // Ensure text is white
     }
@@ -3374,6 +3575,135 @@ async function importGuardiansFromExcel(input) {
 }
 window.importGuardiansFromExcel = importGuardiansFromExcel;
 
+// --- REPAIR / SYNC LOGIC (Smart Data Recovery) ---
+async function syncMissingParentNames() {
+    if (!db) return;
+    const btn = document.querySelector('button[onclick="syncMissingParentNames()"]');
+    const statusDiv = document.getElementById('repairStatus');
+
+    if (!confirm("⚠️ ¿Iniciar Sincronización Inteligente?\n\nEl sistema buscará en los registros de pases ya entregados y en el padrón de apoderados para completar los NOMBRES faltantes en tus 600 alumnos.")) return;
+
+    try {
+        if (btn) btn.disabled = true;
+        if (statusDiv) { statusDiv.style.display = 'block'; statusDiv.innerText = "⏳ Analizando alumnos..."; }
+
+        const studentsSnap = await db.collection('students').get();
+        const guardiansSnap = await db.collection('guardians').get();
+
+        // Create a map for fast lookup
+        const guardianMap = new Map();
+        guardiansSnap.forEach(doc => guardianMap.set(doc.id, doc.data().n));
+
+        let fixedCount = 0;
+        let batch = db.batch();
+        let batchOpCount = 0;
+
+        for (const doc of studentsSnap.docs) {
+            const s = doc.data();
+            let updatedName = "";
+
+            // Case 1: Student already has a DNI for delivery but no pName
+            if (!s.pName && s.qr_delivered_to && guardianMap.has(s.qr_delivered_to)) {
+                updatedName = guardianMap.get(s.qr_delivered_to);
+            }
+
+            // Case 2: Student has no delivery but parent DNI (pDni) was set but pName is empty
+            if (!updatedName && !s.pName && s.pDni && guardianMap.has(s.pDni)) {
+                updatedName = guardianMap.get(s.pDni);
+            }
+
+            if (updatedName) {
+                batch.update(doc.ref, { pName: updatedName });
+                fixedCount++;
+                batchOpCount++;
+
+                if (batchOpCount >= 450) {
+                    await batch.commit();
+                    batch = db.batch();
+                    batchOpCount = 0;
+                }
+            }
+        }
+
+        if (batchOpCount > 0) await batch.commit();
+
+        showToast(`✅ ¡ÉXITO! Se repararon ${fixedCount} registros de alumnos.`, "success");
+        if (statusDiv) statusDiv.innerText = `✅ Sincronización finalizada. ${fixedCount} nombres recuperados.`;
+
+    } catch (e) {
+        console.error("Sync Error:", e);
+        showToast("Error en sincronización: " + e.message, "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+window.syncMissingParentNames = syncMissingParentNames;
+
+async function handleExcelImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(firstSheet);
+
+            if (json.length === 0) throw new Error("Excel vacío.");
+
+            if (!confirm(`Se detectaron ${json.length} filas. ¿Deseas actualizar los datos de los alumnos con este Excel?\n\n(Se buscará coincidencia por DNI del Alumno)`)) {
+                event.target.value = "";
+                return;
+            }
+
+            showToast("⏳ Procesando Excel SIAGIE...", "info");
+
+            let updated = 0;
+            let batch = db.batch();
+            let bCount = 0;
+
+            for (const row of json) {
+                // SIAGIE common columns or flexible mapping
+                const studentDni = String(row['DNI ALUMNO'] || row['DOCUMENTO'] || row['DNI'] || "").trim();
+                const parentName = (row['APELLIDOS Y NOMBRES DEL PADRE'] || row['APODERADO'] || row['NOMBRE APODERADO'] || "").trim();
+                const parentDni = String(row['DNI DEL PADRE'] || row['DNI APODERADO'] || "").trim();
+
+                if (studentDni.length === 8 && parentName) {
+                    const q = await db.collection('students').where('id', '==', studentDni).get();
+                    if (!q.empty) {
+                        const studentDoc = q.docs[0];
+                        const upData = { pName: parentName };
+                        if (parentDni) upData.pDni = parentDni;
+
+                        batch.update(studentDoc.ref, upData);
+                        updated++;
+                        bCount++;
+
+                        if (bCount >= 400) {
+                            await batch.commit();
+                            batch = db.batch();
+                            bCount = 0;
+                        }
+                    }
+                }
+            }
+
+            if (bCount > 0) await batch.commit();
+
+            showToast(`✅ ¡IMPORTACIÓN SIAGIE ÉXITOSA! ${updated} alumnos actualizados.`, "success");
+            event.target.value = "";
+
+        } catch (err) {
+            console.error("Excel Error:", err);
+            showToast("Error leyendo Excel: " + err.message, "error");
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+window.handleExcelImport = handleExcelImport;
+
 // --- DNI AUTO-LOOKUP LISTENER ---
 document.addEventListener('DOMContentLoaded', () => {
     const pickerInp = document.getElementById('deliveryPickerDni');
@@ -3445,3 +3775,21 @@ async function searchGuardianByDNI(dni) {
     }
 }
 
+async function initMigoWorker() {
+    try {
+        console.log("🛠️ JARVIS: Inicializando Agente Secundario para Migo API...");
+        // Secondary App prevents Auth interference with the main user session
+        MigoWorkerApp = firebase.initializeApp(firebaseConfig, "MigoWorkerApp");
+
+        // Anonymous Auth for the worker
+        await MigoWorkerApp.auth().signInAnonymously();
+        console.log("🤖 JARVIS: Agente Secundario CONECTADO.");
+
+        // Handover to logic
+        startMigoWorker(MigoWorkerApp);
+    } catch (e) {
+        console.error("❌ JARVIS: Error iniciando Worker Secundario:", e);
+        // Fallback to main app if secondary fails (not ideal but better than nothing)
+        startMigoWorker(null);
+    }
+}
