@@ -148,6 +148,7 @@
                 <div class="row" style="align-items: flex-end;">
                     <div class="form-group" style="flex: 2;">
                         <input type="text" id="searchDNI" placeholder="Ingrese DNI (8 dígitos)" maxlength="8"
+                            onkeydown="if(event.key === 'Enter') searchStudent()"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                     </div>
                     <div class="form-group" style="flex: 1;">
@@ -573,9 +574,18 @@
                 <div id="deliveryActionPanel">
                     <div class="form-group">
                         <label>👤 ¿Quién recoge el carnet? (DNI):</label>
-                        <input type="text" id="deliveryPickerDni" class="input-field"
-                            placeholder="DNI de apoderado o alumno" maxlength="8"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                            <input type="text" id="deliveryPickerDni" class="input-field" style="margin-bottom:0;"
+                                placeholder="DNI exacto (8 dígitos)" maxlength="8"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                            <button onclick="searchDeliveryPickerMigo()" class="btn-primary"
+                                style="padding: 0 15px; background: #0077B6; width: auto;"
+                                title="Buscar Nombre en Reniec">
+                                🔍
+                            </button>
+                        </div>
+                        <input type="text" id="deliveryPickerName" class="input-field" style="background: #f0f0f0;"
+                            placeholder="Se llenará auto. o escriba manualmente">
                     </div>
                     <button onclick="confirmDelivery()" id="btnConfirmDel" class="btn-primary"
                         style="width: 100%; background: #4CAF50; padding: 15px; font-size: 16px;">

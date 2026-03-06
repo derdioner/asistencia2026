@@ -941,7 +941,7 @@ async function enviarWhatsAppMigo(phone, message) {
 
     try {
         const INSTANCE_NAME = '4259cae0-c1b0-45c9-a0ad-b63a26255511';
-        const WHATSAPP_API_KEY = '104DAA81-E330-4D60-AB7A-2F86B3FD4345';
+        const WHATSAPP_API_KEY = 'CSqZeeppmaJm4sxZUsSIUerIcz61PPFnmuOsWyq6GSybBWf0cN0wW7QKaF1u';
 
         const response = await fetch(`https://chat.migo.pe/message/sendText/${INSTANCE_NAME}`, {
             method: 'POST',
@@ -1336,29 +1336,11 @@ async function searchStudent() {
             id: student.id,
             g: student.g,
             s: student.s,
-            p: student.p
+            p: student.p || '',
+            dob: student.dob || ''
         };
-        const qrString = JSON.stringify(qrData);
 
-        const container = document.getElementById('qrcode');
-        container.innerHTML = "";
-
-        qrCodeObj = new QRCode(container, {
-            text: qrString,
-            width: 400,
-            height: 400,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        document.getElementById('downloadBtn').style.display = 'block';
-        const qrText = document.getElementById('qr-text');
-        qrText.innerText = `${student.n} - ${student.g}° "${student.s}"`;
-        qrText.style.display = 'block';
-
-        // ADD LOGO
-        setTimeout(addLogoToQR, 100);
+        renderQR(qrData);
 
         showToast("✅ Alumno encontrado.", "success");
         searchInput.value = ""; // Clear search
@@ -1383,14 +1365,28 @@ async function searchApoderadoMigo() {
     btn.disabled = true;
 
     try {
+        const payload = new URLSearchParams();
+        payload.append("token", "CSqZeeppmaJm4sxZUsSIUerIcz61PPFnmuOsWyq6GSybBWf0cN0wW7QKaF1u");
+        payload.append("dni", parentDNI);
+
         const response = await fetch("https://api.migo.pe/api/v1/dni", {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer 104DAA81-E330-4D60-AB7A-2F86B3FD4345'
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: JSON.stringify({ "dni": parentDNI })
+            body: payload
         });
+
+        if (!response.ok) {
+            console.error("MIGO HTTP ERROR:", response.status);
+            if (response.status === 401 || response.status === 403) {
+                showToast("❌ API Token expirado o inválido.", "error");
+            } else {
+                showToast("❌ Error del servidor de Migo.", "error");
+            }
+            return;
+        }
 
         const data = await response.json();
 
@@ -3213,11 +3209,66 @@ function renderDeliveryStudent(student) {
     }
 }
 
+async function searchDeliveryPickerMigo() {
+    const parentDNI = document.getElementById('deliveryPickerDni').value.trim();
+    if (parentDNI.length !== 8) {
+        showToast("⚠️ Ingrese un DNI válido de 8 dígitos.", "error");
+        return;
+    }
+
+    const btn = document.querySelector('button[onclick="searchDeliveryPickerMigo()"]');
+    const ogText = btn.innerHTML;
+    btn.innerHTML = "⏳";
+    btn.disabled = true;
+
+    try {
+        const payload = new URLSearchParams();
+        payload.append("token", "CSqZeeppmaJm4sxZUsSIUerIcz61PPFnmuOsWyq6GSybBWf0cN0wW7QKaF1u");
+        payload.append("dni", parentDNI);
+
+        const response = await fetch("https://api.migo.pe/api/v1/dni", {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: payload
+        });
+
+        if (!response.ok) {
+            console.error("MIGO HTTP ERROR:", response.status);
+            if (response.status === 401 || response.status === 403) {
+                showToast("❌ API Token expirado o inválido.", "error");
+            } else {
+                showToast("❌ Error del servidor de Migo.", "error");
+            }
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById('deliveryPickerName').value = data.nombre;
+            showToast("✅ Nombre de RENIEC obtenido.", "success");
+        } else {
+            showToast("❌ No se encontró el DNI o error en API Migo.", "error");
+        }
+
+    } catch (e) {
+        showToast("❌ Error de red al consultar Reniec.", "error");
+    } finally {
+        btn.innerHTML = ogText;
+        btn.disabled = false;
+    }
+}
+
 async function confirmDelivery() {
     if (!currentDeliveryStudent) return;
 
     const pickerInp = document.getElementById('deliveryPickerDni');
+    const nameInp = document.getElementById('deliveryPickerName');
     const pickerDni = pickerInp.value.trim();
+    const pickerName = nameInp ? nameInp.value.trim() : "";
     const btn = document.getElementById('btnConfirmDel');
 
     if (pickerDni.length < 8) {
@@ -3232,14 +3283,14 @@ async function confirmDelivery() {
         btn.innerText = "Guardando...";
 
         // Check for auto-resolved guardian info
-        const guardianName = pickerInp.dataset.guardianName || "";
+        const guardianName = pickerName || (pickerInp.dataset.guardianName || "");
         const guardianRel = pickerInp.dataset.guardianRel || "";
 
         const updateData = {
             qr_delivered: true,
             qr_delivered_at: new Date().toISOString(),
             qr_delivered_to: pickerDni,
-            qr_delivered_to_name: guardianName, // NEW
+            qr_delivered_to_name: guardianName, // UPDATED
             qr_delivered_to_rel: guardianRel,   // NEW
             qr_delivered_by: myDeviceId || 'unknown_device'
         };
